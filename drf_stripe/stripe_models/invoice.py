@@ -3,6 +3,7 @@ from typing import List, Dict, Optional
 from pydantic import BaseModel
 
 from .currency import StripeCurrency
+from .price import StripePrice
 
 
 class StripeInvoiceLineItem(BaseModel):
@@ -13,7 +14,7 @@ class StripeInvoiceLineItem(BaseModel):
     description: str = None
     metadata: Dict
     period: Dict
-    price: Dict
+    price: StripePrice
     proration: bool
     quantity: int
     type: str
