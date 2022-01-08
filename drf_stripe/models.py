@@ -3,51 +3,71 @@ from functools import cached_property
 from django.contrib.auth import get_user_model
 from django.db import models
 
+from .stripe_models.subscription import StripeSubscriptionStatus
+
 
 class StripeUser(models.Model):
-    user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE, related_name='stripe_user', primary_key=True)
+    """A model linking Django user model with a Stripe User"""
+    user = models.OneToOneField(get_user_model(), on_delete=models.CASCADE, related_name='stripe_user',
+                                primary_key=True)
     stripe_id = models.CharField(max_length=128)
 
     @cached_property
     def current_subscriptions(self):
-        """Return query set of Subscription instances that the user currently has."""
-        return self.subscriptions
+        """Return query set of Subscriptions that the user currently has."""
+        return self.subscriptions.filter(status__in=(
+            StripeSubscriptionStatus.ACTIVE, StripeSubscriptionStatus.PAST_DUE, StripeSubscriptionStatus.TRIALING,))
 
-    def get_subscribed_services(self):
-        """List of services that the user currently has access to."""
-        # TODO: implementation
+    @cached_property
+    def currently_subscribed_products(self):
+        """Set of products that the user currently has access to."""
+        return {sub.price.product for sub in self.current_subscriptions.prefetch_related("price__product")}
 
-    def get_subscribed_products(self):
-        """List of product ides that the user currently has access to."""
-        # TODO: implementation
+    @cached_property
+    def currently_subscribed_features(self):
+        """Set of feature that the user currently has access to."""
+        return {link.feature for prod in self.currently_subscribed_products() for link in
+                prod.linked_features.all().prefetch_related("feature")}
 
 
 class Feature(models.Model):
-    """A model used to keep track of features provided by your application."""
+    """
+    A model used to keep track of features provided by your application.
+    This does not correspond to a Stripe object, but the feature ids should be listed as
+     a space delimited strings in Stripe.product.metadata.features
+    """
     feature_id = models.CharField(max_length=64, primary_key=True)
     description = models.CharField(max_length=256)
+
+
+class Product(models.Model):
+    """A model representing a Stripe Product"""
+    product_id = models.CharField(max_length=256, primary_key=True)
+    active = models.BooleanField()
+    description = models.CharField(max_length=1024)
+    name = models.CharField(max_length=256)
+
+
+class ProductFeature(models.Model):
+    """A model representing association of Product and Feature instances. They have many-to-many relationship."""
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="linked_features")
+    feature = models.ForeignKey(Feature, on_delete=models.CASCADE, related_name="linked_products")
 
 
 class Price(models.Model):
     """A model representing to a Stripe Price object, with enhanced attributes."""
     price_id = models.CharField(max_length=256, primary_key=True)
-    product_id = models.CharField(max_length=256)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="prices")
     name = models.CharField(max_length=256)  # displayed name
     price = models.PositiveIntegerField()  # price in cents, corresponding to Stripe unit_amount
     # billing frequency, translated from Stripe price.recurring.interval and price.recurring.interval_count
-    freq = models.CharField()
-    avail = models.BooleanField()  # available of the price, used to supress a price
+    freq = models.CharField(max_length=32)
+    active = models.BooleanField()
 
     class Meta:
         indexes = [
-            models.Index(fields=['avail'])
+            models.Index(fields=['active', 'freq'])
         ]
-
-
-class PriceFeature(models.Model):
-    """A model representing association of Price and Feature instances. They have many-to-many relationship."""
-    price = models.ForeignKey(Price, on_delete=models.CASCADE, related_name="related_features")
-    feature = models.ForeignKey(Feature, on_delete=models.CASCADE, related_name="related_prices")
 
 
 class Subscription(models.Model):
@@ -63,7 +83,7 @@ class Subscription(models.Model):
     cancel_at = models.DateTimeField(null=True)
     cancel_at_period_end = models.BooleanField()
     ended_at = models.DateTimeField(null=True)
-    status = models.CharField()
+    status = models.CharField(max_length=32)
     trial_end = models.DateTimeField(null=True)
     trial_start = models.DateTimeField(null=True)
 

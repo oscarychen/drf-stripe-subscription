@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from .price import StripePrice
 
 
-class Status(Enum):
+class StripeSubscriptionStatus(Enum):
     """See: https://stripe.com/docs/api/subscriptions/object#subscription_object-status"""
     ACTIVE = 'active'
     PAST_DUE = 'past_due'
@@ -51,4 +51,4 @@ class StripeSubscription(BaseModel):
     metadata: Dict
     pending_setup_intent: str = None
     pending_update: str = None
-    status: Status
+    status: StripeSubscriptionStatus

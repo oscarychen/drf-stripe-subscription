@@ -12,12 +12,16 @@ class PackageDimension(Enum):
     width: float
 
 
+class StripeProductMetadata(BaseModel):
+    features: str
+
+
 class StripeProduct(BaseModel):
     """See: https://stripe.com/docs/api/products/object"""
     id: str
     active: bool
     description: str
-    metadata: Dict
+    metadata: Union[StripeProductMetadata, Dict]
     name: str
     created: datetime
     images: List[str]
