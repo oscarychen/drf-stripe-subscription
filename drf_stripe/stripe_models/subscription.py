@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import Enum
-from typing import List, Dict
+from typing import List, Dict, Union, Optional
 
 from pydantic import BaseModel
 
@@ -40,15 +40,15 @@ class StripeSubscriptionItems(BaseModel):
 
 class StripeSubscription(BaseModel):
     """Based on https://stripe.com/docs/api/subscriptions/object"""
-    id: str
-    cancel_at_period_end: bool
-    current_period_end: datetime
-    current_period_start: datetime
-    customer: str
-    default_payment_method: str
-    items: StripeSubscriptionItems
-    latest_invoice: str
-    metadata: Dict
+    id: Optional[str]
+    cancel_at_period_end: Optional[bool]
+    current_period_end: Optional[datetime]
+    current_period_start: Optional[datetime]
+    customer: Optional[str]
+    default_payment_method: Union[str, None]
+    items: Optional[StripeSubscriptionItems]
+    latest_invoice: Optional[str]
+    metadata: Optional[Dict]
     pending_setup_intent: str = None
     pending_update: str = None
-    status: StripeSubscriptionStatus
+    status: Optional[StripeSubscriptionStatus]

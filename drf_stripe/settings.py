@@ -4,7 +4,10 @@ from django.test.signals import setting_changed
 USER_SETTINGS = getattr(settings, "DRF_STRIPE", None)
 
 DEFAULTS = {
-
+    "STRIPE_API_SECRET": "my_stripe_api_key",
+    "STRIPE_WEBHOOK_SECRET": "my_stripe_webhook_key",
+    "FRONT_END_BASE_URL": "http://localhost:3000",
+    "NEW_USER_FREE_TRIAL_DAYS": 15
 }
 
 
