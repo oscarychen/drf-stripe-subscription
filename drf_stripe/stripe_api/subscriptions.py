@@ -55,6 +55,8 @@ def list_user_subscription_products(user_instance, current=True):
     :param bool current: Defaults to True and retrieves only products associated with current subscriptions
         (excluding any cancelled, ended, unpaid subscription products)
     """
-    subscription = list_user_subscriptions(user_instance, current=current)
-    products = set(chain(sub.price.product for sub in subscription.prefetch_related("price__product")))
+    subscriptions = list_user_subscriptions(user_instance, current=current)
+    sub_items = chain.from_iterable(
+        sub.items.all() for sub in subscriptions.all().prefetch_related("items__price__product"))
+    products = set(item.price.product for item in sub_items)
     return products

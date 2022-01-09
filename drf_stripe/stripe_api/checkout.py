@@ -6,9 +6,9 @@ from drf_stripe.stripe_api.api import stripe_api as stripe
 from ..settings import drf_stripe_settings
 
 
-def _make_stripe_checkout_params(stripe_id: str, price_id: str, quantity: int = 1):
+def _make_stripe_checkout_params(customer_id: str, price_id: str, quantity: int = 1):
     return {
-        "customer": stripe_id,
+        "customer": customer_id,
         "success_url": f'{drf_stripe_settings.FRONT_END_BASE_URL}/payment/?session={{CHECKOUT_SESSION_ID}}/',
         "cancel_url": f'{drf_stripe_settings.FRONT_END_BASE_URL}/manage-subscription/',
         "payment_method_types": ['card'],
@@ -47,7 +47,7 @@ def stripe_api_create_checkout_session(user_instance, price_id, trial=True):
     :param str price_id: Stripe price id.
     :param bool trial: Defaults to True, start the subscription with a trial.
     """
-    stripe_checkout_params = _make_stripe_checkout_params(user_instance.stripe_user.stripe_id, price_id)
+    stripe_checkout_params = _make_stripe_checkout_params(user_instance.stripe_user.customer_id, price_id)
 
     if trial is True:
         trial_end_timestamp = make_trial_end_timestamp(user_instance)

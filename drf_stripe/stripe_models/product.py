@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import Enum
-from typing import Dict, List, Union
+from typing import Dict, List, Union, Optional
 
 from pydantic import BaseModel
 
@@ -13,22 +13,29 @@ class PackageDimension(Enum):
 
 
 class StripeProductMetadata(BaseModel):
-    features: str
+    features: Optional[str] = None
 
 
 class StripeProduct(BaseModel):
-    """See: https://stripe.com/docs/api/products/object"""
+    """A single StripeProduct, see https://stripe.com/docs/api/products/object"""
     id: str
     active: bool
-    description: str
+    description: str = None
     metadata: Union[StripeProductMetadata, Dict]
-    name: str
+    name: str = None
     created: datetime
     images: List[str]
     package_dimensions: PackageDimension = None
     shippable: bool = None
     statement_descriptor: str = None
     tax_code: Union[str, Dict] = None
-    unit_label: str
-    updated: datetime
+    unit_label: str = None
+    updated: datetime = None
+    url: str = None
+
+
+class StripeProducts(BaseModel):
+    """List of StripeProducts"""
     url: str
+    has_more: bool
+    data: List[StripeProduct]

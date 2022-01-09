@@ -18,7 +18,7 @@ def get_or_create_stripe_user(user_instance, verify: bool = False) -> StripeUser
         stripe_user = user_instance.stripe_user
         if verify is True:
             try:
-                customer = stripe.Customer.retrieve(stripe_user.stripe_id, expand=['subscriptions'])
+                customer = stripe.Customer.retrieve(stripe_user.customer_id, expand=['subscriptions'])
                 # TODO: sync subscriptions?
             except InvalidRequestError:
                 stripe_user, customer = _stripe_api_create_customer(user_instance)
@@ -37,5 +37,5 @@ def _stripe_api_create_customer(user_instance) -> StripeUser:
     :param user_instance: Django User instance.
     """
     customer = stripe.Customer.create(email=user_instance.email)
-    stripe_user, _ = StripeUser.objects.update_or_create(user=user_instance, defaults={"stripe_id": customer.id})
+    stripe_user, _ = StripeUser.objects.update_or_create(user=user_instance, defaults={"customer_id": customer.id})
     return stripe_user

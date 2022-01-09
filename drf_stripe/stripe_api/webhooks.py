@@ -14,6 +14,7 @@ Initial subscription:
 
 Renewal payment declined:
 - charge.failed
+- invoice.payment_failed
 - payment_intent.created
 - payment_intent.payment_failed
 - payment_intent.canceled
@@ -38,8 +39,10 @@ Subscription immediate cancellation
 
 """
 
+from django.contrib.auth import get_user_model
 from rest_framework.request import Request
 
+from drf_stripe.models import Subscription, SubscriptionItem
 from drf_stripe.settings import drf_stripe_settings
 from drf_stripe.stripe_models.event import EventType, StripeSubscriptionEventData
 from drf_stripe.stripe_models.event import StripeEvent
@@ -78,17 +81,55 @@ def _handle_webhook_event(e: StripeEvent):
         _webhook_event_customer_subscription_deleted(data)
 
 
+def _webhook_event_customer_subscription_created(data: StripeSubscriptionEventData):
+    subscription_id = data.object.id
+    customer = data.object.customer
+    period_start = data.object.current_period_start
+    period_end = data.object.current_period_end
+    cancel_at_period_end = data.object.cancel_at_period_end
+    cancel_at = data.object.cancel_at
+    ended_at = data.object.ended_at
+    status = data.object.status
+    trial_end = data.object.trial_end
+    trial_start = data.object.trial_start
+    items = data.object.items
+
+    user = get_user_model().objects.get(stripe_user__customer_id=customer)
+
+    subscription, _ = Subscription.objects.update_or_create(
+        subscription_id=subscription_id,
+        defaults={
+            "user": user,
+            "period_start": period_start,
+            "period_end": period_end,
+            "cancel_at": cancel_at,
+            "cancel_at_period_end": cancel_at_period_end,
+            "ended_at": ended_at,
+            "status": status.value,
+            "trial_end": trial_end,
+            "trial_start": trial_start
+        })
+
+    for item in items.data:
+        item_id = item.id
+        price = item.price.id
+        quantity = item.quantity
+        SubscriptionItem.objects.update_or_create(
+            sub_item_id=item_id,
+            defaults={
+                "subscription": subscription,
+                "price_id": price,
+                "quantity": quantity
+            }
+        )
+
+
 def _webhook_event_payment_failed(data):
     # print(data)
     pass
 
 
 def _webhook_event_invoice_paid(data):
-    # print(data)
-    pass
-
-
-def _webhook_event_customer_subscription_created(data):
     # print(data)
     pass
 

@@ -10,7 +10,7 @@ class StripeUser(models.Model):
     """A model linking Django user model with a Stripe User"""
     user = models.OneToOneField(get_user_model(), on_delete=models.CASCADE, related_name='stripe_user',
                                 primary_key=True)
-    stripe_id = models.CharField(max_length=128)
+    customer_id = models.CharField(max_length=128)
 
     @cached_property
     def current_subscriptions(self):
@@ -37,15 +37,15 @@ class Feature(models.Model):
      a space delimited strings in Stripe.product.metadata.features
     """
     feature_id = models.CharField(max_length=64, primary_key=True)
-    description = models.CharField(max_length=256)
+    description = models.CharField(max_length=256, null=True)
 
 
 class Product(models.Model):
     """A model representing a Stripe Product"""
     product_id = models.CharField(max_length=256, primary_key=True)
     active = models.BooleanField()
-    description = models.CharField(max_length=1024)
-    name = models.CharField(max_length=256)
+    description = models.CharField(max_length=1024, null=True)
+    name = models.CharField(max_length=256, null=True)
 
 
 class ProductFeature(models.Model):
@@ -58,10 +58,10 @@ class Price(models.Model):
     """A model representing to a Stripe Price object, with enhanced attributes."""
     price_id = models.CharField(max_length=256, primary_key=True)
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="prices")
-    name = models.CharField(max_length=256)  # displayed name
+    nickname = models.CharField(max_length=256, null=True)  # displayed name
     price = models.PositiveIntegerField()  # price in cents, corresponding to Stripe unit_amount
     # billing frequency, translated from Stripe price.recurring.interval and price.recurring.interval_count
-    freq = models.CharField(max_length=32)
+    freq = models.CharField(max_length=64, null=True)
     active = models.BooleanField()
 
     class Meta:
@@ -77,13 +77,12 @@ class Subscription(models.Model):
     """
     subscription_id = models.CharField(max_length=256, primary_key=True)
     user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE, related_name="subscriptions")
-    price = models.ForeignKey(Price, on_delete=models.CASCADE, related_name="+")
     period_start = models.DateTimeField(null=True)
     period_end = models.DateTimeField(null=True)
     cancel_at = models.DateTimeField(null=True)
     cancel_at_period_end = models.BooleanField()
     ended_at = models.DateTimeField(null=True)
-    status = models.CharField(max_length=32)
+    status = models.CharField(max_length=64)
     trial_end = models.DateTimeField(null=True)
     trial_start = models.DateTimeField(null=True)
 
@@ -91,3 +90,10 @@ class Subscription(models.Model):
         indexes = [
             models.Index(fields=['user', 'status'])
         ]
+
+
+class SubscriptionItem(models.Model):
+    sub_item_id = models.CharField(max_length=256, primary_key=True)
+    subscription = models.ForeignKey(Subscription, on_delete=models.CASCADE, related_name="items")
+    price = models.ForeignKey(Price, on_delete=models.CASCADE, related_name="+")
+    quantity = models.PositiveIntegerField()

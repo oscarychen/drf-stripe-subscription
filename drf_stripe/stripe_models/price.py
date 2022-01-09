@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import Enum
-from typing import Dict, Union
+from typing import Dict, Union, List
 
 from pydantic import BaseModel
 
@@ -33,14 +33,21 @@ class StripePriceRecurring(BaseModel):
 
 
 class StripePrice(BaseModel):
-    """See: https://stripe.com/docs/api/prices/object"""
+    """A single StripePrice, see https://stripe.com/docs/api/prices/object"""
     id: str
     active: bool
     currency: StripeCurrency
     metadata: Dict
-    nickname: str
+    nickname: str = None
     product: Union[str, StripeProduct]
-    recurring: StripePriceRecurring
+    recurring: StripePriceRecurring = None
     type: PriceType
     unit_amount: int
     created: datetime
+
+
+class StripePrices(BaseModel):
+    """List of StripePrices"""
+    url: str
+    has_more: bool
+    data: List[StripePrice]
