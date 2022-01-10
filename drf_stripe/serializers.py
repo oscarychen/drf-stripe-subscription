@@ -1,25 +1,6 @@
 from rest_framework import serializers
 
-from drf_stripe.models import SubscriptionItem
-
-
-class StripePlanSerializer(serializers.Serializer):
-    id = serializers.CharField()
-    amount = serializers.IntegerField()
-    currency = serializers.CharField()
-    interval = serializers.CharField()
-    interval_count = serializers.IntegerField()
-
-
-class SubscriptionSerializer(serializers.Serializer):
-    subscription_id = serializers.CharField()
-    billing_cycle_anchor = serializers.IntegerField(required=False)
-    created = serializers.IntegerField(required=False)
-    current_period_start = serializers.IntegerField(required=False)
-    current_period_end = serializers.IntegerField(required=False)
-    latest_invoice = serializers.CharField(required=False)
-    status = serializers.CharField(required=False)
-    plan = StripePlanSerializer(required=False)
+from drf_stripe.models import SubscriptionItem, Product, Price, Subscription
 
 
 class StripeSubscriptionItemSerializer(serializers.ModelSerializer):
@@ -45,3 +26,32 @@ class StripeSubscriptionItemSerializer(serializers.ModelSerializer):
         model = SubscriptionItem
         fields = (
             "product_id", "price_id", "price", "freq", "services", "subscription_expires_at", "subscription_status")
+
+
+class ProductSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Product
+        fields = "__all__"
+
+
+class PriceSerializer(serializers.ModelSerializer):
+    product_id = serializers.CharField(source="product.product_id")
+    name = serializers.CharField(source="product.name")
+    avail = serializers.BooleanField(source="active")
+    services = serializers.SerializerMethodField(method_name='get_feature_ids')
+
+    def get_feature_ids(self, obj):
+        return {feature.feature_id for feature in obj.product.linked_features.all().prefetch_related("feature")}
+
+    class Meta:
+        model = Price
+        fields = ("price_id", "product_id", "name", "price", "freq", "avail", "services")
+
+
+class SubscriptionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Subscription
+        fields = (
+            "subscription_id", "period_start", "period_end", "status", "cancel_at", "cancel_at_period_end",
+            "trial_start", "trial_end"
+        )

@@ -1,9 +1,5 @@
-from functools import cached_property
-
 from django.contrib.auth import get_user_model
 from django.db import models
-
-from .stripe_models.subscription import StripeSubscriptionStatus
 
 
 class StripeUser(models.Model):
@@ -12,22 +8,10 @@ class StripeUser(models.Model):
                                 primary_key=True)
     customer_id = models.CharField(max_length=128)
 
-    @cached_property
-    def current_subscriptions(self):
-        """Return query set of Subscriptions that the user currently has."""
-        return self.subscriptions.filter(status__in=(
-            StripeSubscriptionStatus.ACTIVE, StripeSubscriptionStatus.PAST_DUE, StripeSubscriptionStatus.TRIALING,))
-
-    @cached_property
-    def currently_subscribed_products(self):
-        """Set of products that the user currently has access to."""
-        return {sub.price.product for sub in self.current_subscriptions.prefetch_related("price__product")}
-
-    @cached_property
-    def currently_subscribed_features(self):
-        """Set of feature that the user currently has access to."""
-        return {link.feature for prod in self.currently_subscribed_products() for link in
-                prod.linked_features.all().prefetch_related("feature")}
+    class Meta:
+        indexes = [
+            models.Index(fields=['user', 'customer_id'])
+        ]
 
 
 class Feature(models.Model):
