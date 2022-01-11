@@ -34,8 +34,8 @@ class StripeSubscriptionItemsDataItem(BaseModel):
 class StripeSubscriptionItems(BaseModel):
     """Based on https://stripe.com/docs/api/subscriptions/object#subscription_object-items"""
     data: List[StripeSubscriptionItemsDataItem]
-    has_more: bool
-    url: str
+    has_more: bool = None
+    url: str = None
 
 
 class StripeSubscription(BaseModel):

@@ -6,7 +6,7 @@ class StripeUser(models.Model):
     """A model linking Django user model with a Stripe User"""
     user = models.OneToOneField(get_user_model(), on_delete=models.CASCADE, related_name='stripe_user',
                                 primary_key=True)
-    customer_id = models.CharField(max_length=128)
+    customer_id = models.CharField(max_length=128, null=True)
 
     class Meta:
         indexes = [

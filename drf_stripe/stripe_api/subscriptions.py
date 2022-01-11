@@ -1,6 +1,6 @@
 from itertools import chain
 from operator import attrgetter
-from typing import Literal
+from typing import Literal, List
 
 from django.db.models import Q
 from django.db.models import QuerySet
@@ -25,9 +25,10 @@ STATUS_ARG = Literal[
 ]
 
 
-def list_subscriptions(status: STATUS_ARG = None, limit: int = 10, starting_after: str = None):
+def stripe_api_list_subscriptions(status: STATUS_ARG = None, limit: int = 100, starting_after: str = None):
     """
-    Retrieve all subscriptions we provide.
+    Retrieve all subscriptions.
+
     """
     stripe.Subscription.list(status=status, limit=limit, starting_after=starting_after)
 
@@ -70,10 +71,20 @@ def list_subscribable_product_prices_to_user(user_id):
     :param user_id: Django user id.
     """
     current_products = set(map(attrgetter('product_id'), list_user_subscription_products(user_id)))
-    print(current_products)
     prices = Price.objects.filter(
         Q(active=True) &
         Q(product__active=True) &
         ~Q(product__product_id__in=current_products)
     )
+    return prices
+
+
+def list_all_available_product_prices(expand: List = None):
+    """Retrieve a set of all Price instances that are available to public."""
+
+    prices = Price.objects.filter(Q(active=True) & Q(product__active=True))
+
+    if expand and "feature" in expand:
+        prices = prices.prefetch_related("product__linked_features__feature")
+
     return prices

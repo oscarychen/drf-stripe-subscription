@@ -36,7 +36,6 @@ Subscription cancellation at period end
 Subscription immediate cancellation
 - customer.subscription.deleted
 
-
 """
 
 from django.contrib.auth import get_user_model
@@ -72,16 +71,16 @@ def _handle_webhook_event(e: StripeEvent):
 
     if event_type is EventType.CUSTOMER_SUBSCRIPTION_CREATED:
         data = StripeSubscriptionEventData(**e.event.data)
-        _webhook_event_customer_subscription_created(data)
+        _webhook_event_customer_subscription_data(data)
     elif event_type is EventType.CUSTOMER_SUBSCRIPTION_UPDATED:
         data = StripeSubscriptionEventData(**e.event.data)
-        _webhook_event_customer_subscription_updated(data)
+        _webhook_event_customer_subscription_data(data)
     elif event_type is EventType.CUSTOMER_SUBSCRIPTION_DELETED:
         data = StripeSubscriptionEventData(**e.event.data)
-        _webhook_event_customer_subscription_deleted(data)
+        _webhook_event_customer_subscription_data(data)
 
 
-def _webhook_event_customer_subscription_created(data: StripeSubscriptionEventData):
+def _webhook_event_customer_subscription_data(data: StripeSubscriptionEventData):
     subscription_id = data.object.id
     customer = data.object.customer
     period_start = data.object.current_period_start
@@ -96,7 +95,7 @@ def _webhook_event_customer_subscription_created(data: StripeSubscriptionEventDa
 
     user = get_user_model().objects.get(stripe_user__customer_id=customer)
 
-    subscription, _ = Subscription.objects.update_or_create(
+    subscription, created = Subscription.objects.update_or_create(
         subscription_id=subscription_id,
         defaults={
             "user": user,
@@ -109,6 +108,9 @@ def _webhook_event_customer_subscription_created(data: StripeSubscriptionEventDa
             "trial_end": trial_end,
             "trial_start": trial_start
         })
+
+    print(
+        f"{subscription} created={created} status={status}, cancel_at={cancel_at}, cancel_at_period_end={cancel_at_period_end}, trial_end={trial_end}, period_start={period_start}, period_end={period_end}")
 
     for item in items.data:
         item_id = item.id
@@ -124,21 +126,11 @@ def _webhook_event_customer_subscription_created(data: StripeSubscriptionEventDa
         )
 
 
-def _webhook_event_payment_failed(data):
+def _webhook_event_payment_data(data):
     # print(data)
     pass
 
 
-def _webhook_event_invoice_paid(data):
-    # print(data)
-    pass
-
-
-def _webhook_event_customer_subscription_updated(data):
-    # print(data)
-    pass
-
-
-def _webhook_event_customer_subscription_deleted(data):
+def _webhook_event_invoice_data(data):
     # print(data)
     pass

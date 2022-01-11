@@ -7,4 +7,5 @@ urlpatterns = [
     path('subscribable-product/', views.SubscribableProductPrice.as_view()),
     path('checkout/', views.CreateStripeCheckoutSession.as_view()),
     path('webhook/', views.StripeWebhook.as_view()),
+    path('customer-portal/', views.StripeCustomerPortal.as_view())
 ]

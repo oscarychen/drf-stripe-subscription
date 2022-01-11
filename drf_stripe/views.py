@@ -1,28 +1,45 @@
 from django.contrib.auth import get_user_model
 from rest_framework import permissions, status
+from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .serializers import SubscriptionSerializer, PriceSerializer
 from .stripe_api.checkout import stripe_api_create_checkout_session
+from .stripe_api.customer_portal import stripe_api_create_billing_portal_session
 from .stripe_api.customers import get_or_create_stripe_user
 from .stripe_api.subscriptions import list_user_subscriptions, \
-    list_subscribable_product_prices_to_user
+    list_subscribable_product_prices_to_user, list_all_available_product_prices
 from .stripe_api.webhooks import handle_stripe_webhook_request
 
 
-class Subscription(APIView):
+class Subscription(ListAPIView):
+    """Subscription of current user"""
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class = SubscriptionSerializer
+    pagination_class = None
 
-    def get(self, request):
-        """Get list of subscriptions that user currently has."""
+    def get_queryset(self):
+        return list_user_subscriptions(self.request.user.id)
 
-        # # TODO: temporary accommodation to requests with JWT Token User
-        # user = get_user_model().objects.get(id=request.user.id)
-        # # user = request.user
-        # subscriptions = user.stripe_user.current_subscriptions
-        subscriptions = list_user_subscriptions(request.user.id)
-        return Response(SubscriptionSerializer(subscriptions, many=True).data, status=status.HTTP_200_OK)
+
+class SubscribableProductPrice(ListAPIView):
+    """
+    Products that can be subscribed.
+    Depending on whether this request is made with a bearer token,
+    Anonymous user will receive a list of product and prices available to the public.
+    Authenticated user will receive a list of products and prices available to the user, excluding any product prices
+    the user has already been subscribed to.
+    """
+    permission_classes = [permissions.AllowAny]
+    serializer_class = PriceSerializer
+    pagination_class = None
+
+    def get_queryset(self):
+        if self.request.user.is_anonymous:
+            return list_all_available_product_prices()
+        else:
+            return list_subscribable_product_prices_to_user(self.request.user.id)
 
 
 class CreateStripeCheckoutSession(APIView):
@@ -38,14 +55,15 @@ class CreateStripeCheckoutSession(APIView):
         #     return Response({'message': 'You currently already have active subscription.'},
         #                     status=status.HTTP_409_CONFLICT)
 
-        get_or_create_stripe_user(user)
+        stripe_user = get_or_create_stripe_user(user_id=request.user.id)
         price_id = request.data['price_id']
 
-        checkout_session = stripe_api_create_checkout_session(user, price_id)
+        checkout_session = stripe_api_create_checkout_session(customer_id=stripe_user.customer_id, price_id=price_id)
         return Response({'sessionId': checkout_session['id']}, status=status.HTTP_200_OK)
 
 
 class StripeWebhook(APIView):
+    """Provides endpoint for Stripe webhooks"""
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
@@ -53,9 +71,11 @@ class StripeWebhook(APIView):
         return Response(status=status.HTTP_200_OK)
 
 
-class SubscribableProductPrice(APIView):
+class StripeCustomerPortal(APIView):
+    """Provides redirect URL for Stripe customer portal."""
+
     permission_classes = [permissions.IsAuthenticated]
 
-    def get(self, request):
-        prices = list_subscribable_product_prices_to_user(request.user.id)
-        return Response(PriceSerializer(prices, many=True).data, status=status.HTTP_200_OK)
+    def post(self, request):
+        session = stripe_api_create_billing_portal_session(request.user.id)
+        return Response({"url": session.url}, status=status.HTTP_200_OK)

@@ -3,18 +3,34 @@ from rest_framework import serializers
 from drf_stripe.models import SubscriptionItem, Product, Price, Subscription
 
 
-class StripeSubscriptionItemSerializer(serializers.ModelSerializer):
+class SubscriptionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Subscription
+        fields = (
+            "subscription_id", "period_start", "period_end", "status", "cancel_at", "cancel_at_period_end",
+            "trial_start", "trial_end"
+        )
+
+
+class SubscriptionItemSerializer(serializers.ModelSerializer):
     """Serializes SubscriptionItem model with attributes pulled from related Subscription instance"""
     product_id = serializers.CharField(source="price.product.product_id")
     price_id = serializers.CharField(source="price.price_id")
     price = serializers.CharField(source="price.price")
     freq = serializers.CharField(source="price.freq")
     services = serializers.SerializerMethodField(method_name='get_feature_ids')
-    subscription_expires_at = serializers.SerializerMethodField(method_name='get_subscription_expires_at')
     subscription_status = serializers.CharField(source='subscription.status')
+    period_start = serializers.DateTimeField(source='subscription.period_start')
+    period_end = serializers.DateTimeField(source='subscription.period_end')
+    trial_start = serializers.DateTimeField(source='subscription.trial_start')
+    trial_end = serializers.DateTimeField(source='subscription.trial_end')
+    ended_at = serializers.DateTimeField(source='subscription.ended_at')
+    cancel_at = serializers.DateTimeField(source='subscription.cancel_at')
+    cancel_at_period_end = serializers.BooleanField(source='subscription.cancel_at_period_end')
 
     def get_feature_ids(self, obj):
-        return {link.feature.feature_id for link in obj.price.product.linked_features.all().prefetch_related('feature')}
+        return [{"feature_id": link.feature.feature_id, "feature_desc": link.feature.description} for link in
+                obj.price.product.linked_features.all().prefetch_related('feature')]
 
     def get_subscription_expires_at(self, obj):
         return obj.subscription.period_end or \
@@ -25,7 +41,8 @@ class StripeSubscriptionItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = SubscriptionItem
         fields = (
-            "product_id", "price_id", "price", "freq", "services", "subscription_expires_at", "subscription_status")
+            "product_id", "price_id", "price", "freq", "subscription_status", "period_start", "period_end",
+            "trial_start", "trial_end", "ended_at", "cancel_at", "cancel_at_period_end", "services")
 
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -41,17 +58,10 @@ class PriceSerializer(serializers.ModelSerializer):
     services = serializers.SerializerMethodField(method_name='get_feature_ids')
 
     def get_feature_ids(self, obj):
-        return {feature.feature_id for feature in obj.product.linked_features.all().prefetch_related("feature")}
+        return [{"feature_id": prod_feature.feature.feature_id, "feature_desc": prod_feature.feature.description} for
+                prod_feature in
+                obj.product.linked_features.all().prefetch_related("feature")]
 
     class Meta:
         model = Price
         fields = ("price_id", "product_id", "name", "price", "freq", "avail", "services")
-
-
-class SubscriptionSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Subscription
-        fields = (
-            "subscription_id", "period_start", "period_end", "status", "cancel_at", "cancel_at_period_end",
-            "trial_start", "trial_end"
-        )
