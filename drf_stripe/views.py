@@ -4,13 +4,13 @@ from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from drf_stripe.stripe_webhooks.handler import handle_stripe_webhook_request
 from .serializers import SubscriptionSerializer, PriceSerializer
 from .stripe_api.checkout import stripe_api_create_checkout_session
 from .stripe_api.customer_portal import stripe_api_create_billing_portal_session
 from .stripe_api.customers import get_or_create_stripe_user
 from .stripe_api.subscriptions import list_user_subscriptions, \
     list_subscribable_product_prices_to_user, list_all_available_product_prices
-from .stripe_api.webhooks import handle_stripe_webhook_request
 
 
 class Subscription(ListAPIView):

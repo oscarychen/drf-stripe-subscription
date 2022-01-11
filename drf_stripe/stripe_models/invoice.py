@@ -43,3 +43,9 @@ class StripeInvoice(BaseModel):
     description: str = None
     hosted_invoice_url: Optional[str]
     lines: Optional[List[StripeInvoiceLines]]
+
+
+class StripeInvoiceEventData(BaseModel):
+    """Based on https://stripe.com/docs/api/events/object#event_object-data"""
+    object: StripeInvoice
+    previous_attributes: Optional[StripeInvoice]

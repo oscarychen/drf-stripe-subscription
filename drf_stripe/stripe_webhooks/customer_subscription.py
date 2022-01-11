@@ -39,48 +39,13 @@ Subscription immediate cancellation
 """
 
 from django.contrib.auth import get_user_model
-from rest_framework.request import Request
 
 from drf_stripe.models import Subscription, SubscriptionItem
-from drf_stripe.settings import drf_stripe_settings
-from drf_stripe.stripe_models.event import EventType, StripeSubscriptionEventData
-from drf_stripe.stripe_models.event import StripeEvent
-from .api import stripe_api as stripe
+from drf_stripe.stripe_models.event import StripeSubscriptionEventData
 
 
-def handle_stripe_webhook_request(request):
-    event = _make_webhook_event(request)
-    _handle_webhook_event(event)
-
-
-def _make_webhook_event(request: Request):
-    event = stripe.Webhook.construct_event(
-        payload=request.body,
-        sig_header=request.META['HTTP_STRIPE_SIGNATURE'],
-        secret=drf_stripe_settings.STRIPE_WEBHOOK_SECRET)
-
-    return StripeEvent(event=event)
-
-
-def _handle_webhook_event(e: StripeEvent):
-    print(e.event.type)
-    try:
-        event_type = EventType(e.event.type)
-    except ValueError:
-        return
-
-    if event_type is EventType.CUSTOMER_SUBSCRIPTION_CREATED:
-        data = StripeSubscriptionEventData(**e.event.data)
-        _webhook_event_customer_subscription_data(data)
-    elif event_type is EventType.CUSTOMER_SUBSCRIPTION_UPDATED:
-        data = StripeSubscriptionEventData(**e.event.data)
-        _webhook_event_customer_subscription_data(data)
-    elif event_type is EventType.CUSTOMER_SUBSCRIPTION_DELETED:
-        data = StripeSubscriptionEventData(**e.event.data)
-        _webhook_event_customer_subscription_data(data)
-
-
-def _webhook_event_customer_subscription_data(data: StripeSubscriptionEventData):
+def _handle_customer_subscription_event_data(raw_data: StripeSubscriptionEventData):
+    data = StripeSubscriptionEventData(**raw_data)
     subscription_id = data.object.id
     customer = data.object.customer
     period_start = data.object.current_period_start
@@ -124,13 +89,3 @@ def _webhook_event_customer_subscription_data(data: StripeSubscriptionEventData)
                 "quantity": quantity
             }
         )
-
-
-def _webhook_event_payment_data(data):
-    # print(data)
-    pass
-
-
-def _webhook_event_invoice_data(data):
-    # print(data)
-    pass

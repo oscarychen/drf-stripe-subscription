@@ -1,25 +1,38 @@
 from enum import Enum
-from typing import Optional, Union, Literal, Any
+from typing import Union, Literal, Any
 
 from pydantic import BaseModel, Field
 
-from .invoice import StripeInvoice
-from .subscription import StripeSubscription
+from .invoice import StripeInvoiceEventData
+from .price import StripePriceEventData
+from .product import StripeProductEventData
+from .subscription import StripeSubscriptionEventData
 
 
 class EventType(Enum):
     """See: https://stripe.com/docs/api/events/types"""
 
     CUSTOMER_UPDATED = 'customer.updated'
+
+    CUSTOMER_SUBSCRIPTION_CREATED = 'customer.subscription.created'
+    CUSTOMER_SUBSCRIPTION_UPDATED = 'customer.subscription.updated'
+    CUSTOMER_SUBSCRIPTION_DELETED = 'customer.subscription.deleted'
+
     INVOICE_CREATED = 'invoice.created'
     INVOICE_FINALIZED = 'invoice.finalized'
     INVOICE_PAYMENT_SUCCEEDED = 'invoice.payment_succeeded'
     INVOICE_PAYMENT_FAILED = 'invoice.payment_failed'
     INVOICE_PAID = 'invoice.paid'
-    CUSTOMER_SUBSCRIPTION_CREATED = 'customer.subscription.created'
-    CUSTOMER_SUBSCRIPTION_UPDATED = 'customer.subscription.updated'
-    CUSTOMER_SUBSCRIPTION_DELETED = 'customer.subscription.deleted'
+
     INVOICEITEM_CREATED = 'invoiceitem.created'
+
+    PRODUCT_CREATED = 'product.created'
+    PRODUCT_UPDATED = 'product.updated'
+    PRODUCT_DELETED = 'product.deleted'
+
+    PRICE_DELETED = 'price.deleted'
+    PRICE_UPDATED = 'price.updated'
+    PRICE_CREATED = 'price.created'
 
 
 class StripeEventRequest(BaseModel):
@@ -29,23 +42,15 @@ class StripeEventRequest(BaseModel):
 
 
 class StripeBaseEvent(BaseModel):
-    """Based on https://stripe.com/docs/api/events/object"""
+    """
+    Based on https://stripe.com/docs/api/events/object
+    This is the base event template for more specific Stripe event classes
+    """
     id: str
     api_version: str
     request: StripeEventRequest
     data: Any  # overwrite this attribute when inheriting
     type: str  # overwrite this attribute when inheriting
-
-
-"""
-Invoice event classes
-"""
-
-
-class StripeInvoiceEventData(BaseModel):
-    """Based on https://stripe.com/docs/api/events/object#event_object-data"""
-    object: StripeInvoice
-    previous_attributes: Optional[StripeInvoice]
 
 
 class StripeInvoiceEvent(StripeBaseEvent):
@@ -58,27 +63,38 @@ class StripeInvoiceEvent(StripeBaseEvent):
     ]
 
 
-"""
-Subscription event classes
-"""
-
-
-class StripeSubscriptionEventData(BaseModel):
-    """Based on https://stripe.com/docs/api/events/object#event_object-data"""
-    object: StripeSubscription
-    previous_attributes: Optional[StripeSubscription]
-
-
 class StripeSubscriptionEvent(StripeBaseEvent):
     data: StripeSubscriptionEventData
     type: Literal[
         EventType.CUSTOMER_SUBSCRIPTION_DELETED,
-        EventType.CUSTOMER_SUBSCRIPTION_UPDATED
+        EventType.CUSTOMER_SUBSCRIPTION_UPDATED,
+        EventType.CUSTOMER_SUBSCRIPTION_CREATED
+    ]
+
+
+class StripeProductEvent(StripeBaseEvent):
+    data: StripeProductEventData
+    type: Literal[
+        EventType.PRODUCT_UPDATED,
+        EventType.PRODUCT_CREATED,
+        EventType.PRODUCT_DELETED
+    ]
+
+
+class StripePriceEvent(StripeBaseEvent):
+    data: StripePriceEventData
+    type: Literal[
+        EventType.PRICE_CREATED,
+        EventType.PRODUCT_UPDATED,
+        EventType.PRICE_DELETED
     ]
 
 
 class StripeEvent(BaseModel):
     # Add event classes to this attribute as they are implemented, more specific types first.
     # see https://pydantic-docs.helpmanual.io/usage/types/#discriminated-unions-aka-tagged-unions
-    event: Union[StripeSubscriptionEvent, StripeInvoiceEvent, StripeBaseEvent] = Field(...,
-                                                                                       discriminator='type')
+    event: Union[
+        StripeSubscriptionEvent,
+        StripeInvoiceEvent,
+        StripePriceEvent,
+        StripeBaseEvent] = Field(..., discriminator='type')

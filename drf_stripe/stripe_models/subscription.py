@@ -56,3 +56,9 @@ class StripeSubscription(BaseModel):
     pending_setup_intent: str = None
     pending_update: str = None
     status: Optional[StripeSubscriptionStatus]
+
+
+class StripeSubscriptionEventData(BaseModel):
+    """Based on https://stripe.com/docs/api/events/object#event_object-data"""
+    object: StripeSubscription
+    previous_attributes: Optional[StripeSubscription]
