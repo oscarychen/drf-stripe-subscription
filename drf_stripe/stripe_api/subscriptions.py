@@ -43,8 +43,8 @@ def list_user_subscriptions(user_id, current=True) -> QuerySet[Subscription]:
     """
     q = Q(user_id=user_id)
     if current is True:
-        q &= Q(status__in={StripeSubscriptionStatus.ACTIVE.value, StripeSubscriptionStatus.PAST_DUE.value,
-                           StripeSubscriptionStatus.TRIALING.value})
+        q &= Q(status__in={StripeSubscriptionStatus.ACTIVE, StripeSubscriptionStatus.PAST_DUE,
+                           StripeSubscriptionStatus.TRIALING})
 
     return Subscription.objects.filter(q)
 

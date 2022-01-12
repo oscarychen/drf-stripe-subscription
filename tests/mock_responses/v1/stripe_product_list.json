@@ -1,0 +1,51 @@
+{
+  "data": [
+    {
+      "active": true,
+      "attributes": [],
+      "created": 1635018591,
+      "description": "Includes feature A, B, and C",
+      "id": "prod_abc",
+      "images": [],
+      "livemode": false,
+      "metadata": {
+        "features": "A B C"
+      },
+      "name": "Test Subscription Product ABC",
+      "object": "product",
+      "package_dimensions": null,
+      "shippable": null,
+      "statement_descriptor": null,
+      "tax_code": "txcd_10000000",
+      "type": "service",
+      "unit_label": null,
+      "updated": 1641932255,
+      "url": null
+    },
+    {
+      "active": true,
+      "attributes": [],
+      "created": 1635010175,
+      "description": "Includes feature B, C, and D",
+      "id": "prod_bcd",
+      "images": [],
+      "livemode": false,
+      "metadata": {
+        "features": "B C D"
+      },
+      "name": "Test Subscription Product BCD",
+      "object": "product",
+      "package_dimensions": null,
+      "shippable": null,
+      "statement_descriptor": null,
+      "tax_code": "txcd_10000000",
+      "type": "service",
+      "unit_label": null,
+      "updated": 1641591718,
+      "url": null
+    }
+  ],
+  "has_more": false,
+  "object": "list",
+  "url": "/v1/products"
+}

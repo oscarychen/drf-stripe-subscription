@@ -44,8 +44,7 @@ from drf_stripe.models import Subscription, SubscriptionItem
 from drf_stripe.stripe_models.event import StripeSubscriptionEventData
 
 
-def _handle_customer_subscription_event_data(raw_data: StripeSubscriptionEventData):
-    data = StripeSubscriptionEventData(**raw_data)
+def _handle_customer_subscription_event_data(data: StripeSubscriptionEventData):
     subscription_id = data.object.id
     customer = data.object.customer
     period_start = data.object.current_period_start
@@ -69,7 +68,7 @@ def _handle_customer_subscription_event_data(raw_data: StripeSubscriptionEventDa
             "cancel_at": cancel_at,
             "cancel_at_period_end": cancel_at_period_end,
             "ended_at": ended_at,
-            "status": status.value,
+            "status": status,
             "trial_end": trial_end,
             "trial_start": trial_start
         })

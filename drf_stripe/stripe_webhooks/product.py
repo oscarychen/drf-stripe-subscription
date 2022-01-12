@@ -3,8 +3,7 @@ from drf_stripe.stripe_api.products import create_update_product_features
 from drf_stripe.stripe_models.product import StripeProductEventData
 
 
-def _handle_product_event_data(raw_data: StripeProductEventData):
-    data = StripeProductEventData(**raw_data)
+def _handle_product_event_data(data: StripeProductEventData):
     product_id = data.object.id
     active = data.object.active
     description = data.object.description

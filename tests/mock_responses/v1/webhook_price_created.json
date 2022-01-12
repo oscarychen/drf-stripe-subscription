@@ -1,0 +1,41 @@
+{
+  "api_version": "2020-08-27",
+  "created": 1641962709,
+  "data": {
+    "object": {
+      "active": true,
+      "billing_scheme": "per_unit",
+      "created": 1641962709,
+      "currency": "usd",
+      "id": "price_ac1",
+      "livemode": false,
+      "lookup_key": null,
+      "metadata": {},
+      "nickname": "Test pricing monthly",
+      "object": "price",
+      "product": "prod_ac",
+      "recurring": {
+        "aggregate_usage": null,
+        "interval": "month",
+        "interval_count": 1,
+        "trial_period_days": null,
+        "usage_type": "licensed"
+      },
+      "tax_behavior": "exclusive",
+      "tiers_mode": null,
+      "transform_quantity": null,
+      "type": "recurring",
+      "unit_amount": 100,
+      "unit_amount_decimal": "100"
+    }
+  },
+  "id": "evt_002",
+  "livemode": false,
+  "object": "event",
+  "pending_webhooks": 2,
+  "request": {
+    "id": "req_002",
+    "idempotency_key": "123456"
+  },
+  "type": "price.created"
+}

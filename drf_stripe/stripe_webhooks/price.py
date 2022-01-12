@@ -3,8 +3,7 @@ from drf_stripe.stripe_api.products import get_freq_from_stripe_price
 from drf_stripe.stripe_models.price import StripePriceEventData
 
 
-def _handle_price_event_data(raw_data: StripePriceEventData):
-    data = StripePriceEventData(**raw_data)
+def _handle_price_event_data(data: StripePriceEventData):
     price_id = data.object.id
     product_id = data.object.product
     nickname = data.object.nickname

@@ -1,0 +1,37 @@
+{
+  "api_version": "2020-08-27",
+  "created": 1641973649,
+  "data": {
+    "object": {
+      "active": false,
+      "attributes": [],
+      "created": 1641962708,
+      "description": "Modified product",
+      "id": "prod_ac",
+      "images": [],
+      "livemode": false,
+      "metadata": {
+        "features": "A D"
+      },
+      "name": "Test Product Modified",
+      "object": "product",
+      "package_dimensions": null,
+      "shippable": null,
+      "statement_descriptor": null,
+      "tax_code": "txcd_10000000",
+      "type": "service",
+      "unit_label": null,
+      "updated": 1641973649,
+      "url": null
+    }
+  },
+  "id": "evt_006",
+  "livemode": false,
+  "object": "event",
+  "pending_webhooks": 3,
+  "request": {
+    "id": "req_006",
+    "idempotency_key": null
+  },
+  "type": "product.deleted"
+}

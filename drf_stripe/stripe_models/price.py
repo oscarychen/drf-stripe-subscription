@@ -8,19 +8,19 @@ from .currency import StripeCurrency
 from .product import StripeProduct
 
 
-class RecurringInterval(Enum):
+class RecurringInterval(str, Enum):
     MONTH = 'month'
     YEAR = 'year'
     WEEK = 'week'
     DAY = 'day'
 
 
-class UsageType(Enum):
+class UsageType(str, Enum):
     METERED = 'metered'
     LICENSED = 'licensed'
 
 
-class PriceType(Enum):
+class PriceType(str, Enum):
     ONE_TIME = 'one_time'
     RECURRING = 'recurring'
 
@@ -28,8 +28,8 @@ class PriceType(Enum):
 class StripePriceRecurring(BaseModel):
     aggregate_usage: str = None
     interval: RecurringInterval
-    interval_count: int
-    usage_type: UsageType
+    interval_count: Optional[int]
+    usage_type: Optional[UsageType]
 
 
 class StripePrice(BaseModel):

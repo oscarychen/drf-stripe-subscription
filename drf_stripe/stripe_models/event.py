@@ -9,7 +9,7 @@ from .product import StripeProductEventData
 from .subscription import StripeSubscriptionEventData
 
 
-class EventType(Enum):
+class EventType(str, Enum):
     """See: https://stripe.com/docs/api/events/types"""
 
     CUSTOMER_UPDATED = 'customer.updated'
@@ -50,7 +50,7 @@ class StripeBaseEvent(BaseModel):
     api_version: str
     request: StripeEventRequest
     data: Any  # overwrite this attribute when inheriting
-    type: str  # overwrite this attribute when inheriting
+    type: Literal[str]  # overwrite this attribute when inheriting
 
 
 class StripeInvoiceEvent(StripeBaseEvent):
@@ -85,7 +85,7 @@ class StripePriceEvent(StripeBaseEvent):
     data: StripePriceEventData
     type: Literal[
         EventType.PRICE_CREATED,
-        EventType.PRODUCT_UPDATED,
+        EventType.PRICE_UPDATED,
         EventType.PRICE_DELETED
     ]
 
@@ -96,5 +96,7 @@ class StripeEvent(BaseModel):
     event: Union[
         StripeSubscriptionEvent,
         StripeInvoiceEvent,
+        StripeProductEvent,
         StripePriceEvent,
-        StripeBaseEvent] = Field(..., discriminator='type')
+        StripeBaseEvent,  # needed here so unimplemented event types can pass through validation
+    ] = Field(discriminator='type')

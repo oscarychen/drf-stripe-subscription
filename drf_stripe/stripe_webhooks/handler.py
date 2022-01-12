@@ -1,3 +1,4 @@
+from pydantic import ValidationError
 from rest_framework.request import Request
 
 from drf_stripe.settings import drf_stripe_settings
@@ -10,25 +11,52 @@ from .product import _handle_product_event_data
 
 
 def handle_stripe_webhook_request(request):
-    event = _make_webhook_event(request)
-    _handle_webhook_event(event)
+    event = _make_webhook_event_from_request(request)
+    handle_webhook_event(event)
 
 
-def _make_webhook_event(request: Request):
-    event = stripe.Webhook.construct_event(
+def _make_webhook_event_from_request(request: Request):
+    """
+    Given a Rest Framework request, construct a webhook event.
+
+    :param event: event from Stripe Webhook, defaults to None. Used for test.
+    """
+
+    return stripe.Webhook.construct_event(
         payload=request.body,
         sig_header=request.META['HTTP_STRIPE_SIGNATURE'],
         secret=drf_stripe_settings.STRIPE_WEBHOOK_SECRET)
 
-    return StripeEvent(event=event)
+
+def _handle_event_type_validation_error(err: ValidationError):
+    """
+    Handle Pydantic ValidationError raised when parsing StripeEvent,
+    ignores the error if it is caused by unimplemented event.type;
+    Otherwise, raise the error.
+    """
+    event_type_error = False
+
+    for error in err.errors():
+        error_loc = error['loc']
+        if error_loc[0] == 'event' and error_loc[1] == 'type':
+            event_type_error = True
+            break
+
+    if event_type_error is False:
+        raise err
 
 
-def _handle_webhook_event(e: StripeEvent):
-    print(e.event.type)
+def handle_webhook_event(event):
+    """Perform actions given Stripe Webhook event data."""
+    # print(event)
+
     try:
-        event_type = EventType(e.event.type)
-    except ValueError:
+        e = StripeEvent(event=event)
+    except ValidationError as err:
+        _handle_event_type_validation_error(err)
         return
+
+    event_type = e.event.type
 
     if event_type is EventType.CUSTOMER_SUBSCRIPTION_CREATED:
         _handle_customer_subscription_event_data(e.event.data)

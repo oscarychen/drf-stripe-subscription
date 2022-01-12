@@ -1,0 +1,37 @@
+{
+  "api_version": "2020-08-27",
+  "created": 1641962708,
+  "data": {
+    "object": {
+      "active": true,
+      "attributes": [],
+      "created": 1641962708,
+      "description": "Product for testing",
+      "id": "prod_ac",
+      "images": [],
+      "livemode": false,
+      "metadata": {
+        "features": "A C"
+      },
+      "name": "Test Product",
+      "object": "product",
+      "package_dimensions": null,
+      "shippable": null,
+      "statement_descriptor": null,
+      "tax_code": "txcd_10000000",
+      "type": "service",
+      "unit_label": null,
+      "updated": 1641962708,
+      "url": null
+    }
+  },
+  "id": "evt_001",
+  "livemode": false,
+  "object": "event",
+  "pending_webhooks": 2,
+  "request": {
+    "id": "req_001",
+    "idempotency_key": "123456"
+  },
+  "type": "product.created"
+}

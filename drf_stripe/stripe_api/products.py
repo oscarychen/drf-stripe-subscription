@@ -8,19 +8,29 @@ from ..stripe_models.product import StripeProducts
 
 
 @atomic()
-def stripe_api_update_products_prices():
+def stripe_api_update_products_prices(**kwargs):
     """
     Fetches list of Products and Price from Stripe, updates database.
+    :key dict products:  Optional, list of Stripe Products. Used by test.
+        If not provided, will be fetched from Stripe API: stripe.Product.list().
+    :key dict prices: Optional, list of Stripe Prices. Used by test.
+        If not provided, will be fetched from Stripe API: stripe.Price.list().
     """
-    _stripe_api_fetch_update_products()
-    _stripe_api_fetch_update_prices()
+    _stripe_api_fetch_update_products(**kwargs)
+    _stripe_api_fetch_update_prices(**kwargs)
 
 
-def _stripe_api_fetch_update_products():
+def _stripe_api_fetch_update_products(products=None, **kwargs):
     """
     Fetch list of Stripe Products and updates database.
+
+    :param dict products_response:  Optional, response from calling Stripe API: stripe.Product.list().
+        If not provided the Stripe API will be called to fetch a response.
     """
-    products_response = StripeProducts(**stripe.Product.list(limit=100))
+    if products is None:
+        products = stripe.Product.list(limit=100)
+
+    products_response = StripeProducts(**products)
 
     for product_data in products_response.data:
         product, _ = Product.objects.update_or_create(
@@ -34,11 +44,16 @@ def _stripe_api_fetch_update_products():
         create_update_product_features(product_data)
 
 
-def _stripe_api_fetch_update_prices():
+def _stripe_api_fetch_update_prices(prices=None, **kwargs):
     """
     Fetch list of Stripe Prices and updates database.
+
+    :param dict prices_response: Optional, response from calling Stripe API: stripe.Price.list().
+        If not provided the Stripe API will be called to fetch a response.
     """
-    prices_response = StripePrices(**stripe.Price.list(limit=100))
+    if prices is None:
+        prices = stripe.Price.list(limit=100)
+    prices_response = StripePrices(**prices)
 
     for price_data in prices_response.data:
         Price.objects.update_or_create(
@@ -56,7 +71,7 @@ def _stripe_api_fetch_update_prices():
 def get_freq_from_stripe_price(price_data):
     """Get 'freq' string from Stripe price data"""
     if price_data.recurring:
-        return f"{price_data.recurring.interval.value}_{price_data.recurring.interval_count}"
+        return f"{price_data.recurring.interval}_{price_data.recurring.interval_count}"
 
 
 @atomic

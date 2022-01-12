@@ -1,15 +1,14 @@
 from datetime import datetime
-from enum import Enum
 from typing import Dict, List, Union, Optional
 
 from pydantic import BaseModel
 
 
-class PackageDimension(Enum):
-    height: float
-    length: float
-    weight: float
-    width: float
+class PackageDimension(BaseModel):
+    height: float = None
+    length: float = None
+    weight: float = None
+    width: float = None
 
 
 class StripeProductMetadata(BaseModel):
