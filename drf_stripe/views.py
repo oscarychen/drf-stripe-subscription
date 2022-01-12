@@ -1,4 +1,3 @@
-from django.contrib.auth import get_user_model
 from rest_framework import permissions, status
 from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
@@ -49,17 +48,11 @@ class CreateStripeCheckoutSession(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
-        user = get_user_model().objects.get(id=request.user.id)
-        # current_subscriptions = list_user_subscription_products(user)
-        # if current_subscriptions:
-        #     return Response({'message': 'You currently already have active subscription.'},
-        #                     status=status.HTTP_409_CONFLICT)
-
         stripe_user = get_or_create_stripe_user(user_id=request.user.id)
         price_id = request.data['price_id']
 
         checkout_session = stripe_api_create_checkout_session(customer_id=stripe_user.customer_id, price_id=price_id)
-        return Response({'sessionId': checkout_session['id']}, status=status.HTTP_200_OK)
+        return Response({'session_id': checkout_session['id']}, status=status.HTTP_200_OK)
 
 
 class StripeWebhook(APIView):

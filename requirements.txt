@@ -1,6 +1,6 @@
-Django==4.0
-djangorestframework==3.13.1
-pydantic>=1.8.2
-stripe==2.64.0
-tox==3.24.4
-wheel==0.37.1
+django>=2.2
+djangorestframework>=3.10
+pydantic>=1.8
+stripe>=2.63
+tox>=3.24
+wheel>=0.37

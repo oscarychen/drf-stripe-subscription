@@ -6,7 +6,6 @@ package (such as auth user model) manually by editing the generated migrations f
 """
 
 import django
-
 from django.conf import settings
 from django.core.management import call_command
 

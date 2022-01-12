@@ -29,10 +29,10 @@ deactivate
 
 echo "Creating activate.sh..."
 touch activate.sh
-echo >>activate.sh
+echo > activate.sh
 echo "# Created by env_setup.sh, modify the environment variables below if needed.">>activate.sh
-echo "source $ENVPATH">>activate.sh
-echo >>activate.sh
+echo "source $ENVPATH">> activate.sh
+echo >> activate.sh
 
 echo 'Finished setting up environment.'
 echo 'To activate environment, run `source activate.sh`.'
