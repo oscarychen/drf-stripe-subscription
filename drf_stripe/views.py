@@ -4,11 +4,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from drf_stripe.stripe_webhooks.handler import handle_stripe_webhook_request
-from .serializers import SubscriptionSerializer, PriceSerializer
+from .serializers import SubscriptionSerializer, PriceSerializer, SubscriptionItemSerializer
 from .stripe_api.checkout import stripe_api_create_checkout_session
 from .stripe_api.customer_portal import stripe_api_create_billing_portal_session
 from .stripe_api.customers import get_or_create_stripe_user
-from .stripe_api.subscriptions import list_user_subscriptions, \
+from .stripe_api.subscriptions import list_user_subscriptions, list_user_subscription_items, \
     list_subscribable_product_prices_to_user, list_all_available_product_prices
 
 
@@ -20,6 +20,16 @@ class Subscription(ListAPIView):
 
     def get_queryset(self):
         return list_user_subscriptions(self.request.user.id)
+
+
+class SubscriptionItems(ListAPIView):
+    """SubscriptionItems of current user"""
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = SubscriptionItemSerializer
+    pagination_class = None
+
+    def get_queryset(self):
+        return list_user_subscription_items(self.request.user.id)
 
 
 class SubscribableProductPrice(ListAPIView):

@@ -6,7 +6,7 @@ from django.db.models import Q
 from django.db.models import QuerySet
 
 from drf_stripe.stripe_api.api import stripe_api as stripe
-from ..models import Subscription, Price
+from ..models import Subscription, Price, SubscriptionItem
 from ..stripe_models.subscription import StripeSubscriptionStatus
 
 """
@@ -24,6 +24,12 @@ STATUS_ARG = Literal[
     "ended"
 ]
 
+ACCESS_GRANTING_STATUSES = (
+    StripeSubscriptionStatus.ACTIVE,
+    StripeSubscriptionStatus.PAST_DUE,
+    StripeSubscriptionStatus.TRIALING
+)
+
 
 def stripe_api_list_subscriptions(status: STATUS_ARG = None, limit: int = 100, starting_after: str = None):
     """
@@ -35,7 +41,7 @@ def stripe_api_list_subscriptions(status: STATUS_ARG = None, limit: int = 100, s
 
 def list_user_subscriptions(user_id, current=True) -> QuerySet[Subscription]:
     """
-    Retrieve a set of Subscriptions associated with a given User instance.
+    Retrieve a set of Subscriptions associated with a given user id.
 
     :param user_id: Django User id.
     :param bool current: Defaults to True and retrieves only current subscriptions
@@ -43,10 +49,24 @@ def list_user_subscriptions(user_id, current=True) -> QuerySet[Subscription]:
     """
     q = Q(user_id=user_id)
     if current is True:
-        q &= Q(status__in={StripeSubscriptionStatus.ACTIVE, StripeSubscriptionStatus.PAST_DUE,
-                           StripeSubscriptionStatus.TRIALING})
+        q &= Q(status__in=ACCESS_GRANTING_STATUSES)
 
     return Subscription.objects.filter(q)
+
+
+def list_user_subscription_items(user_id, current=True) -> QuerySet[SubscriptionItem]:
+    """
+    Retrieve a set of SubscriptionItems associated with user id
+
+    :param user_id: Django User is.
+    :param bool current: Defaults to True and retrieves only current subscriptions
+        (excluding any cancelled, ended, unpaid subscriptions)
+    """
+    q = Q(subscription__user__id=user_id)
+    if current is True:
+        q &= Q(subscription__status__in=ACCESS_GRANTING_STATUSES)
+
+    return SubscriptionItem.objects.filter(q)
 
 
 def list_user_subscription_products(user_id, current=True):
