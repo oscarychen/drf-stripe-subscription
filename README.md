@@ -95,6 +95,14 @@ my-site.com/stripe/my-subscription/
 
 This endpoint provides a list of active subscriptions for the current user.
 
+### List user's current subscription items
+
+```
+my-site.com/stripe/my-subscription-items/
+```
+
+This endpoint provides a list of active subscription items for the current user.
+
 ### Created a checkout session using Stripe hosted Checkout page
 
 ```
@@ -160,3 +168,23 @@ With these Stripe events, you can:
   automatically.
 - Manage your customer subscriptions from Stripe Portal, and rely on webhook to update your Django application
   automatically.
+
+## Product features
+
+Stripe does not come with a way to manage feature specific to your application. drf-stripe-subscription provides
+additional tables to manage features associated with each Stripe Product:
+
+- Feature: this table contains feature_id and a description for the feature.
+- ProductFeature: this table keeps track of the many-to-many relation between Product and Feature.
+
+To assign features to a product, go to Stripe Dashboard -> `Products` -> `Add Product`/`Edit Product`:
+Under `Product information`, click on `Additional options`, `add metadata`.
+
+Add an entry called `features`, the value of the entry should be a space-delimited string describing a set of features,
+ie: `FEATURE_A FEATURE_B FEATURE_C`.
+
+If you have Stripe CLI webhook running, you should see that your Django server has automatically received product
+information update, and created/updated the associated ProductFeature and Feature instances. Otherwise, you can also run
+the `python manage.py update_stripe_products` command again to synchronize all of your product data. The `description`
+attribute of each Feature instance will default to the same value as `feature_id`, you should update the `description`
+yourself if needed.
