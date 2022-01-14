@@ -1,5 +1,9 @@
+from itertools import chain
+
 from django.contrib.auth import get_user_model
 from django.db import models
+
+from .stripe_models.subscription import ACCESS_GRANTING_STATUSES
 
 
 class StripeUser(models.Model):
@@ -7,6 +11,30 @@ class StripeUser(models.Model):
     user = models.OneToOneField(get_user_model(), on_delete=models.CASCADE, related_name='stripe_user',
                                 primary_key=True)
     customer_id = models.CharField(max_length=128, null=True)
+
+    @property
+    def subscription_items(self):
+        """Returns a set of SubscriptionItem instances associated with the StripeUser"""
+        return set(chain.from_iterable(
+            sub.items.all().prefetch_related("subscription").prefetch_related(
+                "price__product__linked_features") for sub in
+            self.subscriptions.all().prefetch_related("items__price__product")))
+
+    @property
+    def current_subscription_items(self):
+        """Returns a set of SubscriptionItem instances that grants current access."""
+        return {item for item in self.subscription_items if item.subscription.status in ACCESS_GRANTING_STATUSES}
+
+    @property
+    def subscribed_products(self):
+        """Returns a set of Product instances the StripeUser currently has"""
+        return {item.price.product for item in self.current_subscription_items}
+
+    @property
+    def subscribed_features(self):
+        """Returns a set of Feature instances the StripeUser has access to."""
+        return set(chain.from_iterable(item.price.product.linked_features.all().prefetch_related("feature") for item in
+                                       self.current_subscription_items))
 
     class Meta:
         indexes = [
@@ -56,11 +84,10 @@ class Price(models.Model):
 
 class Subscription(models.Model):
     """
-    A model representing the association of User and Price, corresponding to a Stripe Subscription object single
-    line item.
+    A model representing Subscription, corresponding to a Stripe Subscription object.
     """
     subscription_id = models.CharField(max_length=256, primary_key=True)
-    user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE, related_name="subscriptions")
+    stripe_user = models.ForeignKey(StripeUser, on_delete=models.CASCADE, related_name="subscriptions")
     period_start = models.DateTimeField(null=True)
     period_end = models.DateTimeField(null=True)
     cancel_at = models.DateTimeField(null=True)
@@ -72,11 +99,14 @@ class Subscription(models.Model):
 
     class Meta:
         indexes = [
-            models.Index(fields=['user', 'status'])
+            models.Index(fields=['stripe_user', 'status'])
         ]
 
 
 class SubscriptionItem(models.Model):
+    """
+    A model representing relation of Price and Subscription, corresponding to Stripe Subscription line item.
+    """
     sub_item_id = models.CharField(max_length=256, primary_key=True)
     subscription = models.ForeignKey(Subscription, on_delete=models.CASCADE, related_name="items")
     price = models.ForeignKey(Price, on_delete=models.CASCADE, related_name="+")

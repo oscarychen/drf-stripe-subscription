@@ -19,6 +19,13 @@ class StripeSubscriptionStatus(str, Enum):
     ENDED = 'ended'
 
 
+ACCESS_GRANTING_STATUSES = (
+    StripeSubscriptionStatus.ACTIVE,
+    StripeSubscriptionStatus.PAST_DUE,
+    StripeSubscriptionStatus.TRIALING
+)
+
+
 class StripeSubscriptionItemsDataItem(BaseModel):
     """Based on https://stripe.com/docs/api/subscriptions/object#subscription_object-items-data"""
     id: str

@@ -7,7 +7,7 @@ from django.db.models import QuerySet
 
 from drf_stripe.stripe_api.api import stripe_api as stripe
 from ..models import Subscription, Price, SubscriptionItem
-from ..stripe_models.subscription import StripeSubscriptionStatus
+from ..stripe_models.subscription import ACCESS_GRANTING_STATUSES
 
 """
 status argument, see https://stripe.com/docs/api/subscriptions/list?lang=python#list_subscriptions-status
@@ -23,12 +23,6 @@ STATUS_ARG = Literal[
     "all",
     "ended"
 ]
-
-ACCESS_GRANTING_STATUSES = (
-    StripeSubscriptionStatus.ACTIVE,
-    StripeSubscriptionStatus.PAST_DUE,
-    StripeSubscriptionStatus.TRIALING
-)
 
 
 def stripe_api_list_subscriptions(status: STATUS_ARG = None, limit: int = 100, starting_after: str = None):
@@ -47,7 +41,7 @@ def list_user_subscriptions(user_id, current=True) -> QuerySet[Subscription]:
     :param bool current: Defaults to True and retrieves only current subscriptions
         (excluding any cancelled, ended, unpaid subscriptions)
     """
-    q = Q(user_id=user_id)
+    q = Q(stripe_user__user_id=user_id)
     if current is True:
         q &= Q(status__in=ACCESS_GRANTING_STATUSES)
 
@@ -62,7 +56,7 @@ def list_user_subscription_items(user_id, current=True) -> QuerySet[Subscription
     :param bool current: Defaults to True and retrieves only current subscriptions
         (excluding any cancelled, ended, unpaid subscriptions)
     """
-    q = Q(subscription__user__id=user_id)
+    q = Q(subscription__stripe_user__user_id=user_id)
     if current is True:
         q &= Q(subscription__status__in=ACCESS_GRANTING_STATUSES)
 

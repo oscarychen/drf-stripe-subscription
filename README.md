@@ -6,10 +6,9 @@ package helps you make use of Stripe's hosted UI for customer checkout, billing 
 manage product, pricing, and customer subscriptions.
 
 - Django data models representing Stripe data objects
-- Stripe Webhooks for managing changes with your products, prices, and customer subscriptions
+- Supports Stripe Webhook for managing changes with your products, prices, and customer subscriptions
 - Django management commands for synchronizing data with Stripe
-- Django REST API endpoints supporting Stripe Checkout Session, Customer Portal, as well as fetching products, prices,
-  and subscriptions
+- Django REST API endpoints supporting Stripe Checkout Session and Customer Portal
 
 ## Installation & Setup
 
@@ -103,7 +102,7 @@ my-site.com/stripe/my-subscription-items/
 
 This endpoint provides a list of active subscription items for the current user.
 
-### Created a checkout session using Stripe hosted Checkout page
+### Create a checkout session using Stripe hosted Checkout page
 
 ```
 my-site.com/stripe/checkout/
@@ -164,15 +163,30 @@ customer.subscription.deleted
 
 With these Stripe events, you can:
 
-- Manage your product and pricing model from Stripe Portal, and rely on webhook to update your Django application
+- Manage your products and pricing model from Stripe Portal, and rely on webhook to update your Django application
   automatically.
 - Manage your customer subscriptions from Stripe Portal, and rely on webhook to update your Django application
   automatically.
 
+## StripeUser
+
+The StripeUser model comes with a few attributs that allow accessing information about the user quickly:
+
+```python
+from drf_stripe.models import StripeUser
+
+stripe_user = StripeUser.objects.get(user_id=django_user_id)
+
+print(stripe_user.subscription_items)
+print(stripe_user.current_subscription_items)
+print(stripe_user.subscribed_products)
+print(stripe_user.subscribed_features)
+```
+
 ## Product features
 
-Stripe does not come with a way to manage feature specific to your application. drf-stripe-subscription provides
-additional tables to manage features associated with each Stripe Product:
+Stripe does not come with a way of managing features specific to your products and application. drf-stripe-subscription
+provides additional tables to manage features associated with each Stripe Product:
 
 - Feature: this table contains feature_id and a description for the feature.
 - ProductFeature: this table keeps track of the many-to-many relation between Product and Feature.

@@ -1,46 +1,4 @@
-"""
-Events that Webhook may receive as part of subscription life cycle
-
-Initial subscription:
-- payment_method.attached *
-- setup_intent.succeeded
-- setup_intent.created
-- checkout.session.completed
-- invoice.created
-- invoice.finalized
-- invoice.paid
-- invoice.payment_succeeded
-- customer.subscription.created
-
-Renewal payment declined:
-- charge.failed
-- invoice.payment_failed
-- payment_intent.created
-- payment_intent.payment_failed
-- payment_intent.canceled
-
-Renewal payment successful:
-- charge.succeeded
-- customer.subscription.trial_will_end *
-- invoice.created
-- invoice.finalized
-- invoice.paid
-- invoice.payment_succeeded
-- customer.subscription.updated
-- payment_intent.succeeded
-- payment_intent.created
-
-Subscription cancellation at period end
-- customer.subscription.updated
-
-Subscription immediate cancellation
-- customer.subscription.deleted
-
-"""
-
-from django.contrib.auth import get_user_model
-
-from drf_stripe.models import Subscription, SubscriptionItem
+from drf_stripe.models import Subscription, SubscriptionItem, StripeUser
 from drf_stripe.stripe_models.event import StripeSubscriptionEventData
 
 
@@ -57,12 +15,12 @@ def _handle_customer_subscription_event_data(data: StripeSubscriptionEventData):
     trial_start = data.object.trial_start
     items = data.object.items
 
-    user = get_user_model().objects.get(stripe_user__customer_id=customer)
+    stripe_user = StripeUser.objects.get(customer_id=customer)
 
     subscription, created = Subscription.objects.update_or_create(
         subscription_id=subscription_id,
         defaults={
-            "user": user,
+            "stripe_user": stripe_user,
             "period_start": period_start,
             "period_end": period_end,
             "cancel_at": cancel_at,
