@@ -53,6 +53,7 @@ def _stripe_api_fetch_update_prices(prices=None, **kwargs):
     """
     if prices is None:
         prices = stripe.Price.list(limit=100)
+
     prices_response = StripePrices(**prices)
 
     for price_data in prices_response.data:

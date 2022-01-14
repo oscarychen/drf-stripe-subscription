@@ -13,7 +13,6 @@ def _handle_customer_subscription_event_data(data: StripeSubscriptionEventData):
     status = data.object.status
     trial_end = data.object.trial_end
     trial_start = data.object.trial_start
-    items = data.object.items
 
     stripe_user = StripeUser.objects.get(customer_id=customer)
 
@@ -31,17 +30,19 @@ def _handle_customer_subscription_event_data(data: StripeSubscriptionEventData):
             "trial_start": trial_start
         })
 
-    print(
-        f"{subscription} created={created} status={status}, cancel_at={cancel_at}, cancel_at_period_end={cancel_at_period_end}, trial_end={trial_end}, period_start={period_start}, period_end={period_end}")
+    subscription.items.all().delete()
+    _create_subscription_items(data)
 
-    for item in items.data:
+
+def _create_subscription_items(data: StripeSubscriptionEventData):
+    for item in data.object.items.data:
         item_id = item.id
         price = item.price.id
         quantity = item.quantity
         SubscriptionItem.objects.update_or_create(
             sub_item_id=item_id,
             defaults={
-                "subscription": subscription,
+                "subscription_id": data.object.id,
                 "price_id": price,
                 "quantity": quantity
             }

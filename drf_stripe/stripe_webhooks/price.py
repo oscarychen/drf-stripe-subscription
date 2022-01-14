@@ -21,5 +21,3 @@ def _handle_price_event_data(data: StripePriceEventData):
             "freq": freq
         }
     )
-
-    print(f"{price_obj} created={created} active={active} product_id={product_id} price={price} freq={freq}")

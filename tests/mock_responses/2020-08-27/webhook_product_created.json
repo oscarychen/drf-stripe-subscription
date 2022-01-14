@@ -1,19 +1,19 @@
 {
   "api_version": "2020-08-27",
-  "created": 1641973649,
+  "created": 1642145265,
   "data": {
     "object": {
-      "active": false,
+      "active": true,
       "attributes": [],
-      "created": 1641962708,
-      "description": "Modified product",
-      "id": "prod_ac",
+      "created": 1642145265,
+      "description": "Test Product ABC",
+      "id": "prod_KxfXRXOd7dnLbz",
       "images": [],
       "livemode": false,
       "metadata": {
-        "features": "A D"
+        "features": "A B C"
       },
-      "name": "Test Product Modified",
+      "name": "Test Product ABC",
       "object": "product",
       "package_dimensions": null,
       "shippable": null,
@@ -21,17 +21,17 @@
       "tax_code": "txcd_10000000",
       "type": "service",
       "unit_label": null,
-      "updated": 1641973649,
+      "updated": 1642145265,
       "url": null
     }
   },
-  "id": "evt_006",
+  "id": "evt_1KHkCLL14ex1CGCibvFzwYbH",
   "livemode": false,
   "object": "event",
-  "pending_webhooks": 3,
+  "pending_webhooks": 2,
   "request": {
-    "id": "req_006",
-    "idempotency_key": null
+    "id": "req_7pSl5To9A3UhJZ",
+    "idempotency_key": ""
   },
-  "type": "product.deleted"
+  "type": "product.created"
 }

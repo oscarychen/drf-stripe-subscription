@@ -48,7 +48,6 @@ def _handle_event_type_validation_error(err: ValidationError):
 
 def handle_webhook_event(event):
     """Perform actions given Stripe Webhook event data."""
-    # print(event)
 
     try:
         e = StripeEvent(event=event)
@@ -60,21 +59,30 @@ def handle_webhook_event(event):
 
     if event_type is EventType.CUSTOMER_SUBSCRIPTION_CREATED:
         _handle_customer_subscription_event_data(e.event.data)
+
     elif event_type is EventType.CUSTOMER_SUBSCRIPTION_UPDATED:
         _handle_customer_subscription_event_data(e.event.data)
+
     elif event_type is EventType.CUSTOMER_SUBSCRIPTION_DELETED:
         _handle_customer_subscription_event_data(e.event.data)
 
+
     elif event_type is EventType.PRODUCT_CREATED:
         _handle_product_event_data(e.event.data)
+
     elif event_type is EventType.PRODUCT_UPDATED:
         _handle_product_event_data(e.event.data)
+
     elif event_type is EventType.PRODUCT_DELETED:
         _handle_product_event_data(e.event.data)
 
+
     elif event_type is EventType.PRICE_CREATED:
         _handle_price_event_data(e.event.data)
+
     elif event_type is EventType.PRICE_UPDATED:
         _handle_price_event_data(e.event.data)
+
     elif event_type is EventType.PRICE_DELETED:
         _handle_price_event_data(e.event.data)
+   

@@ -16,5 +16,3 @@ def _handle_product_event_data(data: StripeProductEventData):
     })
 
     create_update_product_features(data.object)
-
-    print(f"{product} created={created} active={active}, description={description}, name={name}")
