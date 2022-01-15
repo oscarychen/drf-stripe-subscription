@@ -15,7 +15,10 @@ class SubscriptionSerializer(serializers.ModelSerializer):
 class SubscriptionItemSerializer(serializers.ModelSerializer):
     """Serializes SubscriptionItem model with attributes pulled from related Subscription instance"""
     product_id = serializers.CharField(source="price.product.product_id")
+    product_name = serializers.CharField(source="price.product.name")
+    product_description = serializers.CharField(source="price.product.description")
     price_id = serializers.CharField(source="price.price_id")
+    price_nickname = serializers.CharField(source="price.nickname")
     price = serializers.CharField(source="price.price")
     freq = serializers.CharField(source="price.freq")
     services = serializers.SerializerMethodField(method_name='get_feature_ids')
@@ -41,7 +44,8 @@ class SubscriptionItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = SubscriptionItem
         fields = (
-            "product_id", "price_id", "price", "freq", "subscription_status", "period_start", "period_end",
+            "product_id", "product_name", "product_description", "price_id", "price_nickname", "price", "freq",
+            "subscription_status", "period_start", "period_end",
             "trial_start", "trial_end", "ended_at", "cancel_at", "cancel_at_period_end", "services")
 
 
