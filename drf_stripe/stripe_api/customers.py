@@ -164,9 +164,9 @@ def stripe_api_update_customers(limit=100, starting_after=None, test_data=None):
                                                                                 defaults={"customer_id": customer.id})
             print(f"Updated Stripe Customer {customer.id}")
 
-    if user_created is True:
-        user_creation_count += 1
-    if stripe_user_created is True:
-        stripe_user_creation_count += 1
+        if user_created is True:
+            user_creation_count += 1
+        if stripe_user_created is True:
+            stripe_user_creation_count += 1
 
     print(f"{user_creation_count} user(s) created, {stripe_user_creation_count} user(s) linked to Stripe customers.")
