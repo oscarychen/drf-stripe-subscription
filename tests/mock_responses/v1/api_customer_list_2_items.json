@@ -1,0 +1,88 @@
+{
+  "data": [
+    {
+      "address": null,
+      "balance": 0,
+      "created": 1642279004,
+      "currency": "usd",
+      "default_source": null,
+      "delinquent": false,
+      "description": null,
+      "discount": null,
+      "email": "tester@example.com",
+      "id": "cus_tester",
+      "invoice_prefix": "C12345AB",
+      "invoice_settings": {
+        "custom_fields": null,
+        "default_payment_method": null,
+        "footer": null
+      },
+      "livemode": false,
+      "metadata": {},
+      "name": null,
+      "next_invoice_sequence": 3,
+      "object": "customer",
+      "phone": null,
+      "preferred_locales": [],
+      "shipping": null,
+      "tax_exempt": "none"
+    },
+    {
+      "address": null,
+      "balance": 0,
+      "created": 1642275637,
+      "currency": "usd",
+      "default_source": null,
+      "delinquent": false,
+      "description": null,
+      "discount": null,
+      "email": "tester2@example.com",
+      "id": "cus_tester2",
+      "invoice_prefix": "C12345AC",
+      "invoice_settings": {
+        "custom_fields": null,
+        "default_payment_method": null,
+        "footer": null
+      },
+      "livemode": false,
+      "metadata": {},
+      "name": null,
+      "next_invoice_sequence": 2,
+      "object": "customer",
+      "phone": null,
+      "preferred_locales": [],
+      "shipping": null,
+      "tax_exempt": "none"
+    },
+    {
+      "address": null,
+      "balance": 0,
+      "created": 1642275649,
+      "currency": "usd",
+      "default_source": null,
+      "delinquent": false,
+      "description": null,
+      "discount": null,
+      "email": "tester3@example.com",
+      "id": "cus_tester3",
+      "invoice_prefix": "C12345CC",
+      "invoice_settings": {
+        "custom_fields": null,
+        "default_payment_method": null,
+        "footer": null
+      },
+      "livemode": false,
+      "metadata": {},
+      "name": null,
+      "next_invoice_sequence": 2,
+      "object": "customer",
+      "phone": null,
+      "preferred_locales": [],
+      "shipping": null,
+      "tax_exempt": "none"
+    }
+  ],
+  "has_more": false,
+  "object": "list",
+  "url": "/v1/customers"
+}

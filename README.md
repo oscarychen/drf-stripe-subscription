@@ -54,10 +54,10 @@ Run migrations command:
 python manage.py migrate
 ```
 
-Pull Product and Price data from Stripe into Django database using the following command:
+Pull data from Stripe into Django database using the following command:
 
 ```commandline
-python manage.py update_stripe_products
+python manage.py pull_stripe
 ```
 
 Finally, start Django development server
@@ -202,3 +202,29 @@ information update, and created/updated the associated ProductFeature and Featur
 the `python manage.py update_stripe_products` command again to synchronize all of your product data. The `description`
 attribute of each Feature instance will default to the same value as `feature_id`, you should update the `description`
 yourself if needed.
+
+## Django management commands
+
+```commandline
+python manage.py pull_stripe
+```
+
+This command calls `update_stripe_products`, `update_stripe_customers`, `update_stripe_subscriptions` commands.
+
+```commandline
+python manage.py update_stripe_products
+```
+
+Pulls products and prices from Stripe and updates Django database.
+
+```commandline
+python manage.py update_stripe_customers
+```
+
+Pulls customers from Stripe and updates Django database.
+
+```commandline
+python manage.py update_stripe_subscriptions
+```
+
+Pulls subscriptions from Stripe and updates Django database.

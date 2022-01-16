@@ -65,6 +65,13 @@ class StripeSubscription(BaseModel):
     status: Optional[StripeSubscriptionStatus]
 
 
+class StripeSubscriptions(BaseModel):
+    """Based on https://stripe.com/docs/api/subscriptions/list"""
+    data: List[StripeSubscription]
+    has_more: bool = None
+    url: str = None
+
+
 class StripeSubscriptionEventData(BaseModel):
     """Based on https://stripe.com/docs/api/events/object#event_object-data"""
     object: StripeSubscription

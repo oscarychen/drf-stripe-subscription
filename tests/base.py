@@ -19,11 +19,11 @@ class BaseTest(TestCase):
     def setup_product_prices(self):
         products = self._load_test_data("v1/api_product_list.json")
         prices = self._load_test_data("v1/api_price_list.json")
-        stripe_api_update_products_prices(products=products, prices=prices)
+        stripe_api_update_products_prices(test_products=products, test_prices=prices)
 
     @staticmethod
     def setup_user_customer():
-        user = get_user_model().objects.create(username="tester", password="12345")
+        user = get_user_model().objects.create(username="tester", email="tester1@example.com", password="12345")
         stripe_user = StripeUser.objects.create(user_id=user.id, customer_id="cus_tester")
         return user, stripe_user
 

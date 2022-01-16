@@ -11,62 +11,72 @@ from ..stripe_models.product import StripeProducts
 def stripe_api_update_products_prices(**kwargs):
     """
     Fetches list of Products and Price from Stripe, updates database.
-    :key dict products:  Optional, list of Stripe Products. Used by test.
-        If not provided, will be fetched from Stripe API: stripe.Product.list().
-    :key dict prices: Optional, list of Stripe Prices. Used by test.
-        If not provided, will be fetched from Stripe API: stripe.Price.list().
+    :key dict test_products: mock event data for testing
+    :key dict test_prices: mock event data for testing
     """
     _stripe_api_fetch_update_products(**kwargs)
     _stripe_api_fetch_update_prices(**kwargs)
 
 
-def _stripe_api_fetch_update_products(products=None, **kwargs):
+def _stripe_api_fetch_update_products(test_products=None, **kwargs):
     """
     Fetch list of Stripe Products and updates database.
 
-    :param dict products_response:  Optional, response from calling Stripe API: stripe.Product.list().
-        If not provided the Stripe API will be called to fetch a response.
+    :param dict test_products:  Response from calling Stripe API: stripe.Product.list(). Used for testing.
     """
-    if products is None:
-        products = stripe.Product.list(limit=100)
+    if test_products is None:
+        products_data = stripe.Product.list(limit=100)
+    else:
+        products_data = test_products
 
-    products_response = StripeProducts(**products)
+    products = StripeProducts(**products_data).data
 
-    for product_data in products_response.data:
-        product, _ = Product.objects.update_or_create(
-            product_id=product_data.id,
+    creation_count = 0
+    for product in products:
+        product_obj, created = Product.objects.update_or_create(
+            product_id=product.id,
             defaults={
-                "active": product_data.active,
-                "description": product_data.description,
-                "name": product_data.name
+                "active": product.active,
+                "description": product.description,
+                "name": product.name
             }
         )
-        create_update_product_features(product_data)
+        create_update_product_features(product)
+        if created is True:
+            creation_count += 1
+
+    print(f"Created {creation_count} new Products")
 
 
-def _stripe_api_fetch_update_prices(prices=None, **kwargs):
+def _stripe_api_fetch_update_prices(test_prices=None, **kwargs):
     """
     Fetch list of Stripe Prices and updates database.
 
-    :param dict prices_response: Optional, response from calling Stripe API: stripe.Price.list().
-        If not provided the Stripe API will be called to fetch a response.
+    :param dict test_prices: Optional, response from calling Stripe API: stripe.Price.list(). Used for testing.
     """
-    if prices is None:
-        prices = stripe.Price.list(limit=100)
+    if test_prices is None:
+        prices_data = stripe.Price.list(limit=100)
+    else:
+        prices_data = test_prices
 
-    prices_response = StripePrices(**prices)
+    prices = StripePrices(**prices_data).data
 
-    for price_data in prices_response.data:
-        Price.objects.update_or_create(
-            price_id=price_data.id,
+    creation_count = 0
+    for price in prices:
+        price_obj, created = Price.objects.update_or_create(
+            price_id=price.id,
             defaults={
-                "product_id": price_data.product,
-                "nickname": price_data.nickname,
-                "price": price_data.unit_amount,
-                "freq": get_freq_from_stripe_price(price_data),
-                "active": price_data.active
+                "product_id": price.product,
+                "nickname": price.nickname,
+                "price": price.unit_amount,
+                "freq": get_freq_from_stripe_price(price),
+                "active": price.active
             }
         )
+        if created is True:
+            creation_count += 1
+
+    print(f"Created {creation_count} new Prices")
 
 
 def get_freq_from_stripe_price(price_data):

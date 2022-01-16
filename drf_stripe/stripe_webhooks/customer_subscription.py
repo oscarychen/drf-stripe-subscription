@@ -36,14 +36,11 @@ def _handle_customer_subscription_event_data(data: StripeSubscriptionEventData):
 
 def _create_subscription_items(data: StripeSubscriptionEventData):
     for item in data.object.items.data:
-        item_id = item.id
-        price = item.price.id
-        quantity = item.quantity
         SubscriptionItem.objects.update_or_create(
-            sub_item_id=item_id,
+            sub_item_id=item.id,
             defaults={
                 "subscription_id": data.object.id,
-                "price_id": price,
-                "quantity": quantity
+                "price_id": item.price.id,
+                "quantity": item.quantity
             }
         )
