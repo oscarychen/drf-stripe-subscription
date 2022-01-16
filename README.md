@@ -1,5 +1,8 @@
 # drf-stripe-subscription
 
+[![CI tests](https://github.com/oscarychen/drf-stripe-subscription/actions/workflows/test.yml/badge.svg)](https://github.com/oscarychen/drf-stripe-subscription/actions/workflows/test.yml)
+[![Package Downloads](https://img.shields.io/pypi/dm/drf-stripe-subscription)](https://pypi.org/project/drf-stripe-subscription/)
+
 An out-of-box Django REST framework solution for payment and subscription management using Stripe. The goal of this
 package is to utilize Stripe provided UI and features as much as possible to manage subscription product models. This
 package helps you make use of Stripe's hosted UI for customer checkout, billing management, as well as for admin to
