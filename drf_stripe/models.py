@@ -49,15 +49,15 @@ class Feature(models.Model):
      a space delimited strings in Stripe.product.metadata.features
     """
     feature_id = models.CharField(max_length=64, primary_key=True)
-    description = models.CharField(max_length=256, null=True)
+    description = models.CharField(max_length=256, null=True, blank=True)
 
 
 class Product(models.Model):
     """A model representing a Stripe Product"""
     product_id = models.CharField(max_length=256, primary_key=True)
     active = models.BooleanField()
-    description = models.CharField(max_length=1024, null=True)
-    name = models.CharField(max_length=256, null=True)
+    description = models.CharField(max_length=1024, null=True, blank=True)
+    name = models.CharField(max_length=256, null=True, blank=True)
 
 
 class ProductFeature(models.Model):
@@ -70,10 +70,10 @@ class Price(models.Model):
     """A model representing to a Stripe Price object, with enhanced attributes."""
     price_id = models.CharField(max_length=256, primary_key=True)
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="prices")
-    nickname = models.CharField(max_length=256, null=True)  # displayed name
+    nickname = models.CharField(max_length=256, null=True, blank=True)  # displayed name
     price = models.PositiveIntegerField()  # price in cents, corresponding to Stripe unit_amount
     # billing frequency, translated from Stripe price.recurring.interval and price.recurring.interval_count
-    freq = models.CharField(max_length=64, null=True)
+    freq = models.CharField(max_length=64, null=True, blank=True)
     active = models.BooleanField()
 
     class Meta:
@@ -88,14 +88,14 @@ class Subscription(models.Model):
     """
     subscription_id = models.CharField(max_length=256, primary_key=True)
     stripe_user = models.ForeignKey(StripeUser, on_delete=models.CASCADE, related_name="subscriptions")
-    period_start = models.DateTimeField(null=True)
-    period_end = models.DateTimeField(null=True)
-    cancel_at = models.DateTimeField(null=True)
+    period_start = models.DateTimeField(null=True, blank=True)
+    period_end = models.DateTimeField(null=True, blank=True)
+    cancel_at = models.DateTimeField(null=True, blank=True)
     cancel_at_period_end = models.BooleanField()
-    ended_at = models.DateTimeField(null=True)
+    ended_at = models.DateTimeField(null=True, blank=True)
     status = models.CharField(max_length=64)
-    trial_end = models.DateTimeField(null=True)
-    trial_start = models.DateTimeField(null=True)
+    trial_end = models.DateTimeField(null=True, blank=True)
+    trial_start = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         indexes = [
