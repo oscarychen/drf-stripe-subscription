@@ -1,6 +1,10 @@
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
+from stripe.error import StripeError
 
 from drf_stripe.models import SubscriptionItem, Product, Price, Subscription
+from drf_stripe.stripe_api.checkout import stripe_api_create_checkout_session
+from drf_stripe.stripe_api.customers import get_or_create_stripe_user
 
 
 class SubscriptionSerializer(serializers.ModelSerializer):
@@ -69,3 +73,26 @@ class PriceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Price
         fields = ("price_id", "product_id", "name", "price", "freq", "avail", "services")
+
+
+class CheckoutRequestSerializer(serializers.Serializer):
+    """Handles request data to create a Stripe checkout session."""
+    price_id = serializers.CharField()
+    owner = serializers.HiddenField(default=serializers.CurrentUserDefault())
+
+    def validate(self, attrs):
+        stripe_user = get_or_create_stripe_user(user_id=self.context['request'].user.id)
+        try:
+            checkout_session = stripe_api_create_checkout_session(
+                customer_id=stripe_user.customer_id,
+                price_id=attrs['price_id'])
+            attrs['session_id'] = checkout_session['id']
+        except StripeError as e:
+            raise ValidationError(e.error)
+        return attrs
+
+    def update(self, instance, validated_data):
+        pass
+
+    def create(self, validated_data):
+        pass
