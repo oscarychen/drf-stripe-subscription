@@ -10,6 +10,7 @@ def _handle_price_event_data(data: StripePriceEventData):
     price = data.object.unit_amount
     active = data.object.active
     freq = get_freq_from_stripe_price(data.object)
+    currency = data.object.currency
 
     price_obj, created = Price.objects.update_or_create(
         price_id=price_id,
@@ -18,6 +19,7 @@ def _handle_price_event_data(data: StripePriceEventData):
             "nickname": nickname,
             "price": price,
             "active": active,
-            "freq": freq
+            "freq": freq,
+            "currency": currency
         }
     )

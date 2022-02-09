@@ -70,7 +70,8 @@ def _stripe_api_fetch_update_prices(test_prices=None, **kwargs):
                 "nickname": price.nickname,
                 "price": price.unit_amount,
                 "freq": get_freq_from_stripe_price(price),
-                "active": price.active
+                "active": price.active,
+                "currency": price.currency
             }
         )
         if created is True:

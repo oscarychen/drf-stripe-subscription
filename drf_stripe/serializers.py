@@ -72,7 +72,7 @@ class PriceSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Price
-        fields = ("price_id", "product_id", "name", "price", "freq", "avail", "services")
+        fields = ("price_id", "product_id", "name", "price", "freq", "avail", "services", "currency")
 
 
 class CheckoutRequestSerializer(serializers.Serializer):
