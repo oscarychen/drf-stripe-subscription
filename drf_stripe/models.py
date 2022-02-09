@@ -24,7 +24,12 @@ class StripeUser(models.Model):
     def current_subscription_items(self):
         """Returns a set of SubscriptionItem instances that grants current access."""
         return {item for item in self.subscription_items if item.subscription.status in ACCESS_GRANTING_STATUSES}
-
+    
+    @property
+    def current_subscriptions(self):
+        """Returns a set of Subscription instances that grants current access."""
+        return self.subscriptions.filter(status__in=ACCESS_GRANTING_STATUSES).distinct('items').prefetch_related('items')
+    
     @property
     def subscribed_products(self):
         """Returns a set of Product instances the StripeUser currently has"""
