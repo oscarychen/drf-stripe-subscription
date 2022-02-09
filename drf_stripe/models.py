@@ -75,6 +75,7 @@ class Price(models.Model):
     # billing frequency, translated from Stripe price.recurring.interval and price.recurring.interval_count
     freq = models.CharField(max_length=64, null=True, blank=True)
     active = models.BooleanField()
+    currency = models.CharField(max_length=3)
 
     class Meta:
         indexes = [
