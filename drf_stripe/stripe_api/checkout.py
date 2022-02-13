@@ -90,8 +90,6 @@ def _make_stripe_checkout_params(
 
     if price_id is not None:
         line_items = [{'price': price_id, 'quantity': quantity}]
-        
-    discounts = discounts if discounts else drf_stripe_settings.ALLOW_PROMOTION_CODES
 
     if payment_method_types is None:
         payment_method_types = drf_stripe_settings.DEFAULT_PAYMENT_METHOD_TYPES
@@ -105,19 +103,26 @@ def _make_stripe_checkout_params(
 
     print(success_url)
 
-    return {
+    ret = {
         "customer": customer_id,
         "success_url": success_url,
         "cancel_url": cancel_url,
         "payment_method_types": payment_method_types,
         "mode": checkout_mode,
         "line_items": line_items,
-        "discounts": discounts,
-        "allow_promotion_codes": drf_stripe_settings.ALLOW_PROMOTION_CODES,
         "subscription_data": {
             "trial_end": int(_make_trial_end_datetime(trial_end=trial_end).timestamp())
         }
     }
+    
+    allow_promotion_codes = drf_stripe_settings.ALLOW_PROMOTION_CODES
+    
+    if allow_promotion_codes:
+        ret.update({"allow_promotion_codes": allow_promotion_codes})
+    else:
+        ret.update({"discounts": discounts if discounts else drf_stripe_settings.ALLOW_PROMOTION_CODES})
+    
+    return ret
 
 
 def _make_trial_end_datetime(trial_end=None):
