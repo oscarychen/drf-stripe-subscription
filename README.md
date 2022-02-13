@@ -126,7 +126,7 @@ by [`redirectToCheckout` in Stripe.js](https://stripe.com/docs/js/checkout/redir
 in your frontend application to redirect to a Stripe hosted Checkout page after fetching the session id.
 
 By default, the Stripe Checkout page will redirect the user back to your application at
-either `mysite.com/payment/session={{CHECKOUT_SESSION_ID}}` if the checkout is successful,
+either `mysite.com/payment/session={CHECKOUT_SESSION_ID}` if the checkout is successful,
 or `mysite.com/manage-subscription/` if checkout is cancelled.
 
 ### Stripe Customer Portal
@@ -185,6 +185,54 @@ print(stripe_user.current_subscription_items)
 print(stripe_user.subscribed_products)
 print(stripe_user.subscribed_features)
 ```
+
+## Customizing Checkout Session Parameters
+
+Some of the checkout parameters are specified in `DRF_STRIPE` settings:
+
+`CHECKOUT_SUCCESS_URL_PATH`: The checkout session success redirect url path.
+`CHECKOUT_CANCEL_URL_PATH`: The checkout session cancel redirect url path.
+`PAYMENT_METHOD_TYPES`: The default
+default [payment method types](https://stripe.com/docs/api/checkout/sessions/create#create_checkout_session-payment_method_types)
+, defaults to `["card"]`.
+`DEFAULT_CHECKOUT_MODE`: The default checkout mode, defaults to `"subscription"`.
+
+By default, you can create a checkout session by calling the default REST endpoint `my-site.com/stripe/checkout/`, this
+REST endpoint utilizes `drf_stripe.serializers.CheckoutRequestSerializer` to validate checkout parameters and create a
+Stripe Checkout Session. Only a `price_id` is needed, `quantity` defaults to 1.
+
+You can extend this serializer and customize Checkout behavior, such as specifying multiple `line_items`
+, `payment_method_types`, and `checkout_mode`:
+
+```python
+from drf_stripe.stripe_api.customers import get_or_create_stripe_user
+from drf_stripe.stripe_api.checkout import stripe_api_create_checkout_session
+from drf_stripe.serializers import CheckoutRequestSerializer
+from rest_framework.exceptions import ValidationError
+from stripe.error import StripeError
+
+
+class CustomCheckoutRequestSerializer(CheckoutRequestSerializer):
+    """Handle creation of a custom checkout session where parameters are customized."""
+
+    def validate(self, attrs):
+        stripe_user = get_or_create_stripe_user(user_id=self.context['request'].user.id)
+        try:
+            checkout_session = stripe_api_create_checkout_session(
+                customer_id=stripe_user.customer_id,
+                line_items=[
+                    {"price_id": "stripe_price_id", "quantity": 2}, ...
+                ],
+                payment_method_types=["card", "alipay", ...],
+                checkout_mode="subscription")
+            attrs['session_id'] = checkout_session['id']
+        except StripeError as e:
+            raise ValidationError(e.error)
+        return attrs
+```
+
+For more information regarding `line_items`, `payment_method_types`, `checkout_mode`, checkout Stripe documentation for
+[creating a checkout session](https://stripe.com/docs/api/checkout/sessions/create).
 
 ## Product features
 
