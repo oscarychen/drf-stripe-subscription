@@ -110,6 +110,8 @@ def _make_stripe_checkout_params(
         "payment_method_types": payment_method_types,
         "mode": checkout_mode,
         "line_items": line_items,
+        "discounts": drf_stripe_settings.DISCOUNTS,
+        "allow_promotion_codes": drf_stripe_settings.ALLOW_PROMOTION_CODES,
         "subscription_data": {
             "trial_end": int(_make_trial_end_datetime(trial_end=trial_end).timestamp())
         }
