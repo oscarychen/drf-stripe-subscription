@@ -7,7 +7,11 @@ DEFAULTS = {
     "STRIPE_API_SECRET": "my_stripe_api_key",
     "STRIPE_WEBHOOK_SECRET": "my_stripe_webhook_key",
     "FRONT_END_BASE_URL": "http://localhost:3000",
-    "NEW_USER_FREE_TRIAL_DAYS": 15
+    "NEW_USER_FREE_TRIAL_DAYS": 15,
+    "CHECKOUT_SUCCESS_URL_PATH": "payment",
+    "CHECKOUT_CANCEL_URL_PATH": "manage-subscription",
+    "DEFAULT_PAYMENT_METHOD_TYPES": ["card"],
+    "DEFAULT_CHECKOUT_MODE": "subscription"
 }
 
 

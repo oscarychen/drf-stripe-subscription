@@ -1,5 +1,7 @@
 from datetime import timedelta, datetime
-from typing import overload
+from functools import reduce
+from typing import overload, List
+from urllib.parse import urljoin
 
 from django.contrib.auth import get_user_model
 from django.utils import timezone
@@ -28,7 +30,10 @@ def stripe_api_create_checkout_session(**kwargs):
     :key user_instance: Django User instance.
     :key customer_id: Stripe customer id.
     :key str price_id: Stripe price id.
+    :key int quantity: Defaults to 1.
     :key datetime trial_end: start the subscription with a trial.
+    :key list line_items: Used when multiple price + quantity params need to be used. Defaults to None.
+        If specified, supersedes price_id and quantity arguments.
     """
 
     user_instance = kwargs.get("user_instance")
@@ -48,7 +53,10 @@ def _stripe_api_create_checkout_session_for_customer(customer_id: str, **kwargs)
 
     :param customer_id: Stripe customer id.
     :param str price_id: Stripe price id.
+    :param int quantity: Defaults to 1.
     :param datetime trial_end: start the subscription with a trial.
+    :param list line_items: Used when multiple price + quantity params need to be used. Defaults to None.
+        If specified, supersedes price_id and quantity arguments.
     """
     stripe_checkout_params = _make_stripe_checkout_params(customer_id, **kwargs)
 
@@ -70,16 +78,38 @@ def _stripe_api_create_checkout_session_for_user(user_instance, **kwargs):
     )
 
 
-def _make_stripe_checkout_params(customer_id: str, price_id: str, quantity: int = 1, trial_end: datetime = None):
+def _make_stripe_checkout_params(
+        customer_id: str, price_id: str = None, quantity: int = 1, line_items: List[dict] = None,
+        trial_end: datetime = None,
+        payment_method_types=None, checkout_mode=drf_stripe_settings.DEFAULT_CHECKOUT_MODE
+):
+    if price_id is None and line_items is None:
+        raise ValueError("Invalid arguments: must provide either a 'price_id' or 'line_items'.")
+    elif price_id is not None and line_items is not None:
+        raise ValueError("Invalid arguments: 'price_id' and 'line_items' should be used at the same time.")
+
+    if price_id is not None:
+        line_items = [{'price': price_id, 'quantity': quantity}]
+
+    if payment_method_types is None:
+        payment_method_types = drf_stripe_settings.DEFAULT_PAYMENT_METHOD_TYPES
+
+    success_url = reduce(urljoin, (drf_stripe_settings.FRONT_END_BASE_URL,
+                                   drf_stripe_settings.CHECKOUT_SUCCESS_URL_PATH,
+                                   "?session={CHECKOUT_SESSION_ID}"))
+
+    cancel_url = reduce(urljoin, (drf_stripe_settings.FRONT_END_BASE_URL,
+                                  drf_stripe_settings.CHECKOUT_CANCEL_URL_PATH))
+
+    print(success_url)
+
     return {
         "customer": customer_id,
-        "success_url": f'{drf_stripe_settings.FRONT_END_BASE_URL}/payment/?session={{CHECKOUT_SESSION_ID}}/',
-        "cancel_url": f'{drf_stripe_settings.FRONT_END_BASE_URL}/manage-subscription/',
-        "payment_method_types": ['card'],
-        "mode": 'subscription',
-        "line_items": [
-            {'price': price_id, 'quantity': quantity},
-        ],
+        "success_url": success_url,
+        "cancel_url": cancel_url,
+        "payment_method_types": payment_method_types,
+        "mode": checkout_mode,
+        "line_items": line_items,
         "subscription_data": {
             "trial_end": int(_make_trial_end_datetime(trial_end=trial_end).timestamp())
         }
