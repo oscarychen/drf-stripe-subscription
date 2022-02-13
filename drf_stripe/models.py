@@ -1,5 +1,3 @@
-from itertools import chain
-
 from django.contrib.auth import get_user_model
 from django.db import models
 
@@ -15,31 +13,26 @@ class StripeUser(models.Model):
     @property
     def subscription_items(self):
         """Returns a set of SubscriptionItem instances associated with the StripeUser"""
-        return set(chain.from_iterable(
-            sub.items.all().prefetch_related("subscription").prefetch_related(
-                "price__product__linked_features") for sub in
-            self.subscriptions.all().prefetch_related("items__price__product")))
+        return SubscriptionItem.objects.filter(subscription__stripe_user=self)
 
     @property
     def current_subscription_items(self):
         """Returns a set of SubscriptionItem instances that grants current access."""
-        return {item for item in self.subscription_items if item.subscription.status in ACCESS_GRANTING_STATUSES}
-    
-    @property
-    def current_subscriptions(self):
-        """Returns a set of Subscription instances that grants current access."""
-        return self.subscriptions.filter(status__in=ACCESS_GRANTING_STATUSES).distinct('items').prefetch_related('items')
-    
+        return self.subscription_items.filter(subscription__status__in=ACCESS_GRANTING_STATUSES)
+
     @property
     def subscribed_products(self):
         """Returns a set of Product instances the StripeUser currently has"""
-        return {item.price.product for item in self.current_subscription_items}
+        return {item.price.product for item in
+                self.current_subscription_items.prefetch_related("price", "price__product")}
 
     @property
     def subscribed_features(self):
         """Returns a set of Feature instances the StripeUser has access to."""
-        return set(chain.from_iterable(item.price.product.linked_features.all().prefetch_related("feature") for item in
-                                       self.current_subscription_items))
+        price_list = self.current_subscription_items.values_list('price', flat=True)
+        product_list = Price.objects.filter(pk__in=price_list).values_list("product", flat=True)
+        return {item.feature for item in
+                ProductFeature.objects.filter(product_id__in=product_list).prefetch_related("feature")}
 
     class Meta:
         indexes = [
