@@ -35,6 +35,8 @@ def stripe_api_create_checkout_session(**kwargs):
     :key list line_items: Used when multiple price + quantity params need to be used. Defaults to None.
         If specified, supersedes price_id and quantity arguments.
     """
+    
+    print(kwargs)
 
     user_instance = kwargs.get("user_instance")
     customer_id = kwargs.get("customer_id")
@@ -119,7 +121,9 @@ def _make_stripe_checkout_params(
         ret.update({"allow_promotion_codes": allow_promotion_codes})
     else:
         ret.update({"discounts": discounts if discounts else drf_stripe_settings.DEFAULT_DISCOUNTS})
-    
+        
+    print(ret)
+        
     return ret
 
 
