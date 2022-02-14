@@ -85,7 +85,9 @@ class CheckoutRequestSerializer(serializers.Serializer):
         try:
             checkout_session = stripe_api_create_checkout_session(
                 customer_id=stripe_user.customer_id,
-                price_id=attrs['price_id'])
+                price_id=attrs['price_id'],
+                success_url=attrs.get('success_url'),
+                cancel_url=attrs.get('price_id'))
             attrs['session_id'] = checkout_session['id']
         except StripeError as e:
             raise ValidationError(e.error)
