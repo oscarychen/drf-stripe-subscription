@@ -89,7 +89,7 @@ class CheckoutRequestSerializer(serializers.Serializer):
                 customer_id=stripe_user.customer_id,
                 price_id=attrs['price_id'],
                 success_url=attrs.get('success_url'),
-                cancel_url=attrs.get('price_id'))
+                cancel_url=attrs.get('cancel_url'))
             attrs['session_id'] = checkout_session['id']
         except StripeError as e:
             raise ValidationError(e.error)
