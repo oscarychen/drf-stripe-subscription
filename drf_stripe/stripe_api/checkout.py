@@ -101,8 +101,6 @@ def _make_stripe_checkout_params(
     cancel_url = reduce(urljoin, (drf_stripe_settings.FRONT_END_BASE_URL,
                                   drf_stripe_settings.CHECKOUT_CANCEL_URL_PATH))
 
-    print(success_url)
-
     ret = {
         "customer": customer_id,
         "success_url": success_url,
@@ -120,7 +118,7 @@ def _make_stripe_checkout_params(
     if allow_promotion_codes:
         ret.update({"allow_promotion_codes": allow_promotion_codes})
     else:
-        ret.update({"discounts": discounts if discounts else drf_stripe_settings.ALLOW_PROMOTION_CODES})
+        ret.update({"discounts": discounts if discounts else drf_stripe_settings.DEFAULT_DISCOUNTS})
     
     return ret
 
