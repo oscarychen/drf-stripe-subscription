@@ -79,7 +79,7 @@ def _stripe_api_create_checkout_session_for_user(user_instance, **kwargs):
 
 
 def _make_stripe_checkout_params(
-        customer_id: str, price_id: str = None, checkout_url: str = None, success_url: str = None, quantity: int = 1, line_items: List[dict] = None,
+        customer_id: str, price_id: str = None, cancel_url: str = None, success_url: str = None, quantity: int = 1, line_items: List[dict] = None,
         trial_end: datetime = None, discounts: List[dict] = None,
         payment_method_types=None, checkout_mode=drf_stripe_settings.DEFAULT_CHECKOUT_MODE
 ):
