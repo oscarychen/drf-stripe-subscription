@@ -80,7 +80,7 @@ def _stripe_api_create_checkout_session_for_user(user_instance, **kwargs):
 
 def _make_stripe_checkout_params(
         customer_id: str, price_id: str = None, quantity: int = 1, line_items: List[dict] = None,
-        trial_end: datetime = None,
+        trial_end: datetime = None, discounts: List[dict] = None,
         payment_method_types=None, checkout_mode=drf_stripe_settings.DEFAULT_CHECKOUT_MODE
 ):
     if price_id is None and line_items is None:
@@ -101,9 +101,7 @@ def _make_stripe_checkout_params(
     cancel_url = reduce(urljoin, (drf_stripe_settings.FRONT_END_BASE_URL,
                                   drf_stripe_settings.CHECKOUT_CANCEL_URL_PATH))
 
-    print(success_url)
-
-    return {
+    ret = {
         "customer": customer_id,
         "success_url": success_url,
         "cancel_url": cancel_url,
@@ -114,6 +112,15 @@ def _make_stripe_checkout_params(
             "trial_end": int(_make_trial_end_datetime(trial_end=trial_end).timestamp())
         }
     }
+    
+    allow_promotion_codes = drf_stripe_settings.ALLOW_PROMOTION_CODES
+    
+    if allow_promotion_codes:
+        ret.update({"allow_promotion_codes": allow_promotion_codes})
+    else:
+        ret.update({"discounts": discounts if discounts else drf_stripe_settings.DEFAULT_DISCOUNTS})
+    
+    return ret
 
 
 def _make_trial_end_datetime(trial_end=None):

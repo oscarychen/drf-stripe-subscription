@@ -11,7 +11,9 @@ DEFAULTS = {
     "CHECKOUT_SUCCESS_URL_PATH": "payment",
     "CHECKOUT_CANCEL_URL_PATH": "manage-subscription",
     "DEFAULT_PAYMENT_METHOD_TYPES": ["card"],
-    "DEFAULT_CHECKOUT_MODE": "subscription"
+    "DEFAULT_CHECKOUT_MODE": "subscription",
+    "DEFAULT_DISCOUNTS": None,
+    "ALLOW_PROMOTION_CODES": True,
 }
 
 
