@@ -35,6 +35,8 @@ def stripe_api_create_checkout_session(**kwargs):
     :key list line_items: Used when multiple price + quantity params need to be used. Defaults to None.
         If specified, supersedes price_id and quantity arguments.
     """
+    
+    print(kwargs)
 
     user_instance = kwargs.get("user_instance")
     customer_id = kwargs.get("customer_id")
@@ -79,7 +81,7 @@ def _stripe_api_create_checkout_session_for_user(user_instance, **kwargs):
 
 
 def _make_stripe_checkout_params(
-        customer_id: str, price_id: str = None, quantity: int = 1, line_items: List[dict] = None,
+        customer_id: str, price_id: str = None, cancel_url: str = None, success_url: str = None, quantity: int = 1, line_items: List[dict] = None,
         trial_end: datetime = None, discounts: List[dict] = None,
         payment_method_types=None, checkout_mode=drf_stripe_settings.DEFAULT_CHECKOUT_MODE
 ):
@@ -94,11 +96,11 @@ def _make_stripe_checkout_params(
     if payment_method_types is None:
         payment_method_types = drf_stripe_settings.DEFAULT_PAYMENT_METHOD_TYPES
 
-    success_url = reduce(urljoin, (drf_stripe_settings.FRONT_END_BASE_URL,
+    success_url = success_url if success_url else reduce(urljoin, (drf_stripe_settings.FRONT_END_BASE_URL,
                                    drf_stripe_settings.CHECKOUT_SUCCESS_URL_PATH,
                                    "?session={CHECKOUT_SESSION_ID}"))
 
-    cancel_url = reduce(urljoin, (drf_stripe_settings.FRONT_END_BASE_URL,
+    cancel_url = cancel_url if cancel_url else reduce(urljoin, (drf_stripe_settings.FRONT_END_BASE_URL,
                                   drf_stripe_settings.CHECKOUT_CANCEL_URL_PATH))
 
     ret = {
@@ -119,7 +121,9 @@ def _make_stripe_checkout_params(
         ret.update({"allow_promotion_codes": allow_promotion_codes})
     else:
         ret.update({"discounts": discounts if discounts else drf_stripe_settings.DEFAULT_DISCOUNTS})
-    
+        
+    print(ret)
+        
     return ret
 
 

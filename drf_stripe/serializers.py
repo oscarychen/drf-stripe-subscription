@@ -78,6 +78,8 @@ class PriceSerializer(serializers.ModelSerializer):
 class CheckoutRequestSerializer(serializers.Serializer):
     """Handles request data to create a Stripe checkout session."""
     price_id = serializers.CharField()
+    success_url = serializers.CharField(default=None)
+    cancel_url = serializers.CharField(default=None)
     owner = serializers.HiddenField(default=serializers.CurrentUserDefault())
 
     def validate(self, attrs):
@@ -85,7 +87,9 @@ class CheckoutRequestSerializer(serializers.Serializer):
         try:
             checkout_session = stripe_api_create_checkout_session(
                 customer_id=stripe_user.customer_id,
-                price_id=attrs['price_id'])
+                price_id=attrs['price_id'],
+                success_url=attrs.get('success_url'),
+                cancel_url=attrs.get('cancel_url'))
             attrs['session_id'] = checkout_session['id']
         except StripeError as e:
             raise ValidationError(e.error)
