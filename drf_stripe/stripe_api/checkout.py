@@ -73,9 +73,6 @@ def _stripe_api_create_checkout_session_for_user(user_instance, **kwargs):
     :param str price_id: Stripe price id.
     :param bool trial_end: trial_end
     """
-    
-    if user_instance.stripe_user.subscription_items.count() > 0:
-        kwargs['trial_end'] = 0
 
     return _stripe_api_create_checkout_session_for_customer(
         customer_id=user_instance.stripe_user.customer_id,
