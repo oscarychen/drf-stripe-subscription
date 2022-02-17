@@ -86,7 +86,7 @@ class CheckoutRequestSerializer(serializers.Serializer):
         stripe_user = get_or_create_stripe_user(user_id=self.context['request'].user.id)
         try:
             checkout_session = stripe_api_create_checkout_session(
-                user_instance=self.context['request'].user,
+                user_instance=stripe_user.user,
                 price_id=attrs['price_id'],
                 success_url=attrs.get('success_url'),
                 cancel_url=attrs.get('cancel_url'))
