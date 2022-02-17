@@ -114,7 +114,7 @@ def _make_stripe_checkout_params(
         "mode": checkout_mode,
         "line_items": line_items,
         "subscription_data": {
-            "trial_end": int(_make_trial_end_datetime(trial_end=trial_end).timestamp())
+            "trial_end": _make_trial_end_datetime(trial_end=trial_end)
         }
     }
     
@@ -144,4 +144,4 @@ def _make_trial_end_datetime(trial_end=None):
         if trial_end < min_trial_end:
             trial_end = min_trial_end
 
-    return trial_end.replace(microsecond=0)
+    return trial_end.replace(microsecond=0).timestamp()
