@@ -73,6 +73,9 @@ def _stripe_api_create_checkout_session_for_user(user_instance, **kwargs):
     :param str price_id: Stripe price id.
     :param bool trial_end: trial_end
     """
+    
+    if user_instance.stripe_user.subscription_items.count() > 0:
+        kwargs['trial_end'] = 0
 
     return _stripe_api_create_checkout_session_for_customer(
         customer_id=user_instance.stripe_user.customer_id,
@@ -122,8 +125,6 @@ def _make_stripe_checkout_params(
     else:
         ret.update({"discounts": discounts if discounts else drf_stripe_settings.DEFAULT_DISCOUNTS})
         
-    print(ret)
-        
     return ret
 
 
@@ -134,11 +135,13 @@ def _make_trial_end_datetime(trial_end=None):
     Return None if less than 48 hours left to set up trialing with Stripe
 
     """
-    if trial_end is None:
+    if trial_end == 0:
+        return None
+    elif trial_end is None:
         trial_end = timezone.now() + timezone.timedelta(days=drf_stripe_settings.NEW_USER_FREE_TRIAL_DAYS)
-
-    min_trial_end = timezone.now() + timedelta(hours=49)
-    if trial_end < min_trial_end:
-        trial_end = min_trial_end
+    else:
+        min_trial_end = timezone.now() + timedelta(hours=49)
+        if trial_end < min_trial_end:
+            trial_end = min_trial_end
 
     return trial_end.replace(microsecond=0)
