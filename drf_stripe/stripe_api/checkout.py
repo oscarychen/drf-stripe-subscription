@@ -141,4 +141,4 @@ def _make_trial_end_datetime(trial_end=None):
         if trial_end < min_trial_end:
             trial_end = min_trial_end
 
-    return trial_end.replace(microsecond=0).timestamp()
+    return int(trial_end.replace(microsecond=0).timestamp())
