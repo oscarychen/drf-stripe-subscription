@@ -7,7 +7,7 @@ DEFAULTS = {
     "STRIPE_API_SECRET": "my_stripe_api_key",
     "STRIPE_WEBHOOK_SECRET": "my_stripe_webhook_key",
     "FRONT_END_BASE_URL": "http://localhost:3000",
-    "NEW_USER_FREE_TRIAL_DAYS": 15,
+    "NEW_USER_FREE_TRIAL_DAYS": None,
     "CHECKOUT_SUCCESS_URL_PATH": "payment",
     "CHECKOUT_CANCEL_URL_PATH": "manage-subscription",
     "DEFAULT_PAYMENT_METHOD_TYPES": ["card"],
@@ -57,7 +57,6 @@ drf_stripe_settings = DrfStripeSettings(USER_SETTINGS, DEFAULTS)
 
 
 def reload_drf_stripe_settings(*args, **kwargs):
-    print("Reloading drf_stripe settings")
     setting = kwargs["setting"]
     if setting == "DRF_STRIPE":
         drf_stripe_settings.reload()

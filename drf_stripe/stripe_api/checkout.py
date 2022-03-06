@@ -1,6 +1,6 @@
 from datetime import timedelta, datetime
 from functools import reduce
-from typing import overload, List
+from typing import overload, List, Union
 from urllib.parse import urljoin
 
 from django.contrib.auth import get_user_model
@@ -80,8 +80,8 @@ def _stripe_api_create_checkout_session_for_user(user_instance, **kwargs):
 
 def _make_stripe_checkout_params(
         customer_id: str, price_id: str = None, quantity: int = 1, line_items: List[dict] = None,
-        trial_end: datetime = None, discounts: List[dict] = None,
-        payment_method_types=None, checkout_mode=drf_stripe_settings.DEFAULT_CHECKOUT_MODE
+        trial_end: Union[str, datetime, None] = 'auto', discounts: List[dict] = None,
+        payment_method_types: List[str] = None, checkout_mode: str = drf_stripe_settings.DEFAULT_CHECKOUT_MODE
 ):
     if price_id is None and line_items is None:
         raise ValueError("Invalid arguments: must provide either a 'price_id' or 'line_items'.")
@@ -101,7 +101,7 @@ def _make_stripe_checkout_params(
     cancel_url = reduce(urljoin, (drf_stripe_settings.FRONT_END_BASE_URL,
                                   drf_stripe_settings.CHECKOUT_CANCEL_URL_PATH))
 
-    ret = {
+    params = {
         "customer": customer_id,
         "success_url": success_url,
         "cancel_url": cancel_url,
@@ -109,32 +109,41 @@ def _make_stripe_checkout_params(
         "mode": checkout_mode,
         "line_items": line_items,
         "subscription_data": {
-            "trial_end": int(_make_trial_end_datetime(trial_end=trial_end).timestamp())
+            "trial_end": _make_trial_end_timestamp(trial_end=trial_end)
         }
     }
-    
+
     allow_promotion_codes = drf_stripe_settings.ALLOW_PROMOTION_CODES
-    
+
     if allow_promotion_codes:
-        ret.update({"allow_promotion_codes": allow_promotion_codes})
+        params.update({"allow_promotion_codes": allow_promotion_codes})
     else:
-        ret.update({"discounts": discounts if discounts else drf_stripe_settings.DEFAULT_DISCOUNTS})
-    
-    return ret
+        params.update({"discounts": discounts if discounts else drf_stripe_settings.DEFAULT_DISCOUNTS})
+
+    return params
 
 
-def _make_trial_end_datetime(trial_end=None):
+def _make_trial_end_timestamp(trial_end: Union[str, None, datetime] = 'auto'):
     """
     Returns a new trial_end time to be used for setting up new Stripe Subscription.
     Stripe requires new Subscription trial_end to be at least 48 hours in the future.
-    Return None if less than 48 hours left to set up trialing with Stripe
 
+    :param trial_end: Explicitly set trial end datetime.
+        Defaults to 'auto', which will return a calculated trial_end based on NEW_USER_FREE_TRIAL_DAYS setting.
+        If set to less than 48 hours from now, will return the minimum required trial_end acceptable to Stripe API.
+        If set to None, no trial, returns None.
     """
     if trial_end is None:
-        trial_end = timezone.now() + timezone.timedelta(days=drf_stripe_settings.NEW_USER_FREE_TRIAL_DAYS)
+        return
+
+    if trial_end == 'auto':
+        if drf_stripe_settings.NEW_USER_FREE_TRIAL_DAYS is None:
+            return
+        else:
+            trial_end = timezone.now() + timezone.timedelta(days=drf_stripe_settings.NEW_USER_FREE_TRIAL_DAYS + 1)
 
     min_trial_end = timezone.now() + timedelta(hours=49)
     if trial_end < min_trial_end:
         trial_end = min_trial_end
 
-    return trial_end.replace(microsecond=0)
+    return int(trial_end.replace(microsecond=0).timestamp())
