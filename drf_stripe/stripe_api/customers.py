@@ -7,6 +7,7 @@ from django.db.transaction import atomic
 from drf_stripe.models import StripeUser
 from drf_stripe.stripe_api.api import stripe_api as stripe
 from drf_stripe.stripe_models.customer import StripeCustomers, StripeCustomer
+from ..settings import drf_stripe_settings
 
 
 @overload
@@ -156,9 +157,12 @@ def stripe_api_update_customers(limit=100, starting_after=None, test_data=None):
     for customer in stripe_customers:
         # Stripe customer can have null as email
         if customer.email is not None:
+            query_filters = {drf_stripe_settings.DJANGO_USER_EMAIL_FIELD: customer.email}
+            defaults = {k: getattr(customer, v) for k, v in
+                        drf_stripe_settings.USER_CREATE_DEFAULTS_ATTRIBUTE_MAP.items()}
             user, user_created = get_user_model().objects.get_or_create(
-                email=customer.email,
-                defaults={"username": customer.email}
+                **query_filters,
+                defaults=defaults
             )
             stripe_user, stripe_user_created = StripeUser.objects.get_or_create(user=user,
                                                                                 defaults={"customer_id": customer.id})

@@ -279,3 +279,21 @@ python manage.py update_stripe_subscriptions
 ```
 
 Pulls subscriptions from Stripe and updates Django database.
+
+## Working with customized Django User models
+
+The following DRF_STRIPE settings can be used to customize how Django creates User instance using Stripe Customer
+attributes (default values shown):
+
+```python
+DRF_STRIPE = {
+    "DJANGO_USER_EMAIL_FIELD": "email",
+    "USER_CREATE_DEFAULTS_ATTRIBUTE_MAP": {"username": "email"},
+}
+```
+
+The `DJANGO_USER_EMAIL_FIELD` specifies name of the Django User attribute to be used to store Stripe Customer email. It
+will be used to look up existing Django User using Stripe Customer email.
+
+The `USER_CREATE_DEFAULTS_ATTRIBUTE_MAP` maps the name of Django User attribute to name of corresponding Stripe Customer
+attribute, and is used during the automated Django User instance creation.
