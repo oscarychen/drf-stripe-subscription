@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import Enum
-from typing import List, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel
 
@@ -61,7 +61,7 @@ class StripeSubscription(BaseModel):
     latest_invoice: Optional[str]
     metadata: Optional[Dict]
     pending_setup_intent: str = None
-    pending_update: str = None
+    pending_update: Any = None
     status: Optional[StripeSubscriptionStatus]
 
 
