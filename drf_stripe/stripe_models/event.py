@@ -50,7 +50,7 @@ class StripeBaseEvent(BaseModel):
     api_version: str
     request: StripeEventRequest
     data: Any  # overwrite this attribute when inheriting
-    type: Literal[str]  # overwrite this attribute when inheriting
+    type: Literal[Any]  # overwrite this attribute when inheriting
 
 
 class StripeInvoiceEvent(StripeBaseEvent):

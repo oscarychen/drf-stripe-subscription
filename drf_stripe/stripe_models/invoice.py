@@ -42,7 +42,7 @@ class StripeInvoice(BaseModel):
     customer: str
     description: str = None
     hosted_invoice_url: Optional[str]
-    lines: Optional[List[StripeInvoiceLines]]
+    lines: Optional[StripeInvoiceLines]
 
 
 class StripeInvoiceEventData(BaseModel):

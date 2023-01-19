@@ -38,7 +38,7 @@ def _handle_event_type_validation_error(err: ValidationError):
 
     for error in err.errors():
         error_loc = error['loc']
-        if error_loc[0] == 'event' and error_loc[1] == 'type':
+        if error_loc[0] == 'event' and error.get('ctx', {}).get('discriminator_key', {}) == 'type':
             event_type_error = True
             break
 
