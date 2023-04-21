@@ -1,12 +1,20 @@
 from django.contrib.auth import get_user_model
 from django.db import models
+from django.apps import apps as django_apps
 
 from .stripe_models.subscription import ACCESS_GRANTING_STATUSES
+from .settings import drf_stripe_settings
 
+
+def get_drf_stripe_user_model():
+    if drf_stripe_settings.DJANGO_USER_MODEL:
+        return django_apps.get_model(drf_stripe_settings.DJANGO_USER_MODEL, require_ready=False)
+    else:
+        return get_user_model()
 
 class StripeUser(models.Model):
     """A model linking Django user model with a Stripe User"""
-    user = models.OneToOneField(get_user_model(), on_delete=models.CASCADE, related_name='stripe_user',
+    user = models.OneToOneField(get_drf_stripe_user_model(), on_delete=models.CASCADE, related_name='stripe_user',
                                 primary_key=True)
     customer_id = models.CharField(max_length=128, null=True)
 

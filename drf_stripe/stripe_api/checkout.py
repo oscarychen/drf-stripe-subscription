@@ -3,7 +3,7 @@ from functools import reduce
 from typing import overload, List, Union
 from urllib.parse import urljoin
 
-from django.contrib.auth import get_user_model
+from drf_stripe.models import get_drf_stripe_user_model as get_user_model
 from django.utils import timezone
 
 from drf_stripe.stripe_api.api import stripe_api as stripe
