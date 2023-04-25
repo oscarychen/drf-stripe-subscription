@@ -9,7 +9,7 @@
       "delinquent": false,
       "description": null,
       "discount": null,
-      "email": "tester@example.com",
+      "email": "tester1@example.com",
       "id": "cus_tester",
       "invoice_prefix": "C12345AB",
       "invoice_settings": {
