@@ -10,6 +10,10 @@ from drf_stripe.stripe_models.customer import StripeCustomers, StripeCustomer
 from ..settings import drf_stripe_settings
 
 
+class CreatingNewUsersDisabledError(Exception):
+    pass
+
+
 @overload
 def get_or_create_stripe_user(user_instance) -> StripeUser:
     ...
@@ -76,6 +80,13 @@ def _get_or_create_stripe_user_from_customer_id(customer_id):
     """
     Returns a StripeUser instance given customer_id
 
+    If there is no Django user connected to a StripeUser with the given customer_id then
+    Stripe's customer API is called to get the customer's details (e.g. email address).
+    Then if a Django user exists for that email address a StripeUser record will be created.
+    If a Django user does not exist for that email address and USER_CREATE_DEFAULTS_ATTRIBUTE_MAP
+    is set then a Django user will be created along with a StripeUser record. If
+    USER_CREATE_DEFAULTS_ATTRIBUTE_MAP is not set then a CreatingNewUsersDisabledError will be raised.
+
     :param str customer_id: Stripe customer id
     """
 
@@ -85,26 +96,98 @@ def _get_or_create_stripe_user_from_customer_id(customer_id):
     except ObjectDoesNotExist:
         customer_response = stripe.Customer.retrieve(customer_id)
         customer = StripeCustomer(**customer_response)
-        user, created = get_user_model().objects.get_or_create(
-            email=customer.email,
-            defaults={"username": customer.email}
-        )
+        user, created = _get_or_create_django_user_if_configured(customer)
         if created:
             print(f"Created new User with customer_id {customer_id}")
 
-    return _get_or_create_stripe_user_from_user_id_email(user.id, user.email)
+    return _get_or_create_stripe_user_from_user_id_email(user.id, user.email, customer_id)
 
 
-def _get_or_create_stripe_user_from_user_id_email(user_id, user_email: str):
+def _get_or_create_django_user_if_configured(customer: StripeCustomer):
+    """
+    If a Django user exists for the customer's email address it will be returned.
+    If a Django user does not exist for the customer's email address and USER_CREATE_DEFAULTS_ATTRIBUTE_MAP
+    is set then a Django user will be created and returned.
+    If USER_CREATE_DEFAULTS_ATTRIBUTE_MAP is not set then a CreatingNewUsersDisabledError will be raised.
+
+    :param customer: Stripe customer record
+    """
+
+    django_user_query_filters = {drf_stripe_settings.DJANGO_USER_EMAIL_FIELD: customer.email}
+    django_user = get_user_model().objects.filter(
+        **django_user_query_filters
+    ).first()
+
+    if django_user:
+        return django_user, False
+
+    if not drf_stripe_settings.USER_CREATE_DEFAULTS_ATTRIBUTE_MAP:
+        raise CreatingNewUsersDisabledError(f"No Django user exists with Stripe customer id '{customer.id}'s email and USER_CREATE_DEFAULTS_ATTRIBUTE_MAP is not set so a Django user cannot be created.")
+
+    defaults = {k: getattr(customer, v) for k, v in
+                drf_stripe_settings.USER_CREATE_DEFAULTS_ATTRIBUTE_MAP.items()}
+    defaults[drf_stripe_settings.DJANGO_USER_EMAIL_FIELD] = customer.email
+    django_user = get_user_model().objects.create(
+        **defaults
+    )
+    return django_user, True
+
+
+def get_or_create_stripe_user_from_customer(customer: StripeCustomer) -> StripeUser:
+    """
+    Returns a StripeUser instance given customer, creating records if required.
+
+    If a Django User record does not exist for the customer's email address and USER_CREATE_DEFAULTS_ATTRIBUTE_MAP is set
+    then a new Django User record will be created with the email address and other values according to the USER_CREATE_DEFAULTS_ATTRIBUTE_MAP.
+    If a Django User record does not exist for the customer's email address and USER_CREATE_DEFAULTS_ATTRIBUTE_MAP is not set then a CreatingNewUsersDisabledError will be thrown.
+
+    :param customer: Stripe customer record
+    """
+
+    try:
+        return StripeUser.objects.get(customer_id=customer.id)
+    except ObjectDoesNotExist:
+
+        django_user_query_filters = {drf_stripe_settings.DJANGO_USER_EMAIL_FIELD: customer.email}
+
+        django_user = get_user_model().objects.filter(
+            **django_user_query_filters
+        ).first()
+
+        if not django_user:
+            if not drf_stripe_settings.USER_CREATE_DEFAULTS_ATTRIBUTE_MAP:
+                raise CreatingNewUsersDisabledError(f"No Django user exists with Stripe customer id '{customer.id}'s email and USER_CREATE_DEFAULTS_ATTRIBUTE_MAP is not set so a Django user cannot be created.")
+
+            defaults = {k: getattr(customer, v) for k, v in
+                            drf_stripe_settings.USER_CREATE_DEFAULTS_ATTRIBUTE_MAP.items()}
+            defaults[drf_stripe_settings.DJANGO_USER_EMAIL_FIELD] = customer.email
+            django_user = get_user_model().objects.create(
+                **defaults
+            )
+
+            print(f"Created new Django User with email address for Stripe customer_id {customer.id}")
+
+        stripe_user, stripe_user_created = StripeUser.objects.get_or_create(user_id=django_user.id, defaults={'customer_id': customer.id})
+        if not stripe_user_created and stripe_user.customer_id:
+            # there's an existing StripeUser record for the Django User with the given customer's email address, but it already has a different customer_id.
+            # (if the existing customer_id matched this one then this function would have already returned)
+            # As there is a OneToOne relationship between DjangoUser and StripeUser we cannot create another record here, and we shouldn't assume it is
+            # safe to replace the reference to the existing Stripe Customer. So raise an error.
+            raise ValueError(f"A StripeUser record already exists for Django user id '{django_user.id}' which references a different customer id - called with customer id '{customer.id}', existing db customer id: '{stripe_user.customer_id}'")
+
+        return stripe_user
+
+
+def _get_or_create_stripe_user_from_user_id_email(user_id, user_email: str, customer_id: str = None):
     """
     Return a StripeUser instance given user_id and user_email.
 
     :param user_id: user id
     :param str user_email: user email address
     """
-    stripe_user, created = StripeUser.objects.get_or_create(user_id=user_id)
+    stripe_user, created = StripeUser.objects.get_or_create(user_id=user_id, customer_id=customer_id)
 
-    if created:
+    if created and not customer_id:
         customer = _stripe_api_get_or_create_customer_from_email(user_email)
         stripe_user.customer_id = customer.id
         stripe_user.save()
@@ -134,7 +217,11 @@ def _stripe_api_get_or_create_customer_from_email(user_email: str):
 @atomic
 def stripe_api_update_customers(limit=100, starting_after=None, test_data=None):
     """
-    Retrieve list of Stripe customer objects, and create Django User and StripeUser instances.
+    Retrieve list of Stripe customer objects, create StripeUser instances and optionally Django User.
+    If a Django user does not exist a Django User will be created if setting USER_CREATE_DEFAULTS_ATTRIBUTE_MAP is set,
+    otherwise the Customer will be skipped.
+
+    Called from management command.
 
     :param int limit: Limit the number of customers to retrieve
     :param str starting_after: Stripe Customer id to start retrieval
@@ -158,19 +245,29 @@ def stripe_api_update_customers(limit=100, starting_after=None, test_data=None):
         # Stripe customer can have null as email
         if customer.email is not None:
             query_filters = {drf_stripe_settings.DJANGO_USER_EMAIL_FIELD: customer.email}
-            defaults = {k: getattr(customer, v) for k, v in
-                        drf_stripe_settings.USER_CREATE_DEFAULTS_ATTRIBUTE_MAP.items()}
-            user, user_created = get_user_model().objects.get_or_create(
-                **query_filters,
-                defaults=defaults
-            )
-            stripe_user, stripe_user_created = StripeUser.objects.get_or_create(user=user,
-                                                                                defaults={"customer_id": customer.id})
-            print(f"Updated Stripe Customer {customer.id}")
+            if drf_stripe_settings.USER_CREATE_DEFAULTS_ATTRIBUTE_MAP:
+                defaults = {k: getattr(customer, v) for k, v in
+                    drf_stripe_settings.USER_CREATE_DEFAULTS_ATTRIBUTE_MAP.items()}
+                user, user_created = get_user_model().objects.get_or_create(
+                    **query_filters,
+                    defaults=defaults
+                )
+            else:
+                user_created = False
+                user = get_user_model().objects.filter(
+                    **query_filters
+                ).first()
 
-            if user_created is True:
-                user_creation_count += 1
-            if stripe_user_created is True:
-                stripe_user_creation_count += 1
+            if user:
+                stripe_user, stripe_user_created = StripeUser.objects.get_or_create(user=user,
+                                                                                    defaults={"customer_id": customer.id})
+                print(f"Updated Stripe Customer {customer.id}")
+
+                if user_created is True:
+                    user_creation_count += 1
+                if stripe_user_created is True:
+                    stripe_user_creation_count += 1
+            else:
+                print(f"Could not find Stripe Customer id '{customer.id}' in user model '{get_user_model()}' with '{drf_stripe_settings.DJANGO_USER_EMAIL_FIELD}' of '{customer.email}', USER_CREATE_DEFAULTS_ATTRIBUTE_MAP is not set so skipping Customer.")
 
     print(f"{user_creation_count} user(s) created, {stripe_user_creation_count} user(s) linked to Stripe customers.")
