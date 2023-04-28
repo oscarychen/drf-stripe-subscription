@@ -1,9 +1,17 @@
 from django.contrib.auth import get_user_model
 from django.db import models
 from django.apps import apps as django_apps
+from django.conf import settings
 
 from .stripe_models.subscription import ACCESS_GRANTING_STATUSES
 from .settings import drf_stripe_settings
+
+
+def get_drf_stripe_user_model_name():
+    if drf_stripe_settings.DJANGO_USER_MODEL:
+        return drf_stripe_settings.DJANGO_USER_MODEL
+    else:
+        return settings.AUTH_USER_MODEL
 
 
 def get_drf_stripe_user_model():
@@ -11,6 +19,7 @@ def get_drf_stripe_user_model():
         return django_apps.get_model(drf_stripe_settings.DJANGO_USER_MODEL, require_ready=False)
     else:
         return get_user_model()
+
 
 class StripeUser(models.Model):
     """A model linking Django user model with a Stripe User"""
