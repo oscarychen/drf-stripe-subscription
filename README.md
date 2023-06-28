@@ -191,10 +191,12 @@ print(stripe_user.subscribed_features)
 Some of the checkout parameters are specified in `DRF_STRIPE` settings:
 
 `CHECKOUT_SUCCESS_URL_PATH`: The checkout session success redirect url path.
+
 `CHECKOUT_CANCEL_URL_PATH`: The checkout session cancel redirect url path.
-`PAYMENT_METHOD_TYPES`: The default
-default [payment method types](https://stripe.com/docs/api/checkout/sessions/create#create_checkout_session-payment_method_types)
+
+`PAYMENT_METHOD_TYPES`: The default [payment method types](https://stripe.com/docs/api/checkout/sessions/create#create_checkout_session-payment_method_types)
 , defaults to `["card"]`.
+
 `DEFAULT_CHECKOUT_MODE`: The default checkout mode, defaults to `"subscription"`.
 
 By default, you can create a checkout session by calling the default REST endpoint `my-site.com/stripe/checkout/`, this
