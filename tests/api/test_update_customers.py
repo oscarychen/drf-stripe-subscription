@@ -1,4 +1,4 @@
-from django.contrib.auth import get_user_model
+from drf_stripe.models import get_drf_stripe_user_model as get_user_model
 
 from drf_stripe.models import StripeUser
 from drf_stripe.stripe_api.customers import stripe_api_update_customers

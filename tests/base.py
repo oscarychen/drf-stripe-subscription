@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from django.contrib.auth import get_user_model
+from drf_stripe.models import get_drf_stripe_user_model as get_user_model
 from django.test import TestCase
 
 from drf_stripe.models import StripeUser
