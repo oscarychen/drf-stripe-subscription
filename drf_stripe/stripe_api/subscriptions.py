@@ -7,7 +7,7 @@ from django.db.models import QuerySet
 from django.db.transaction import atomic
 
 from drf_stripe.stripe_api.api import stripe_api as stripe
-from .customers import get_or_create_stripe_user
+from .customers import get_or_create_stripe_user, CreatingNewUsersDisabledError
 from ..models import Subscription, Price, SubscriptionItem
 from ..stripe_models.subscription import ACCESS_GRANTING_STATUSES, StripeSubscriptions
 
@@ -29,14 +29,17 @@ STATUS_ARG = Literal[
 
 @atomic
 def stripe_api_update_subscriptions(status: STATUS_ARG = None, limit: int = 100, starting_after: str = None,
-                                    test_data=None):
+                                    test_data=None, ignore_new_user_creation_errors = False):
     """
     Retrieve all subscriptions. Updates database.
+
+    Called from management command.
 
     :param STATUS_ARG status: subscription status to retrieve.
     :param int limit: number of instances to retrieve( between 0 and 100).
     :param str starting_after: subscription id to start retrieving.
     :param test_data: response data from Stripe API stripe.Subscription.list, used for testing
+    :param ignore_new_user_creation_errors: if True, CreatingNewUsersDisabledError thrown by get_or_create_stripe_user() will be skipped
     """
 
     if limit < 0 or limit > 100:
@@ -52,26 +55,32 @@ def stripe_api_update_subscriptions(status: STATUS_ARG = None, limit: int = 100,
     creation_count = 0
 
     for subscription in stripe_subscriptions:
-        stripe_user = get_or_create_stripe_user(customer_id=subscription.customer)
+        try:
+            stripe_user = get_or_create_stripe_user(customer_id=subscription.customer)
 
-        _, created = Subscription.objects.update_or_create(
-            subscription_id=subscription.id,
-            defaults={
-                "stripe_user": stripe_user,
-                "period_start": subscription.current_period_start,
-                "period_end": subscription.current_period_end,
-                "cancel_at": subscription.cancel_at,
-                "cancel_at_period_end": subscription.cancel_at_period_end,
-                "ended_at": subscription.ended_at,
-                "status": subscription.status,
-                "trial_end": subscription.trial_end,
-                "trial_start": subscription.trial_start
-            }
-        )
-        print(f"Updated subscription {subscription.id}")
-        _update_subscription_items(subscription.id, subscription.items.data)
-        if created is True:
-            creation_count += 1
+            _, created = Subscription.objects.update_or_create(
+                subscription_id=subscription.id,
+                defaults={
+                    "stripe_user": stripe_user,
+                    "period_start": subscription.current_period_start,
+                    "period_end": subscription.current_period_end,
+                    "cancel_at": subscription.cancel_at,
+                    "cancel_at_period_end": subscription.cancel_at_period_end,
+                    "ended_at": subscription.ended_at,
+                    "status": subscription.status,
+                    "trial_end": subscription.trial_end,
+                    "trial_start": subscription.trial_start
+                }
+            )
+            print(f"Updated subscription {subscription.id}")
+            _update_subscription_items(subscription.id, subscription.items.data)
+            if created is True:
+                creation_count += 1
+        except CreatingNewUsersDisabledError as e:
+            if not ignore_new_user_creation_errors:
+                raise e
+            else:
+                print(f"User for customer id '{subscription.customer}' with subscription '{subscription.id}' does not exist, skipping.")
 
     print(f"Created {creation_count} new Subscriptions.")
 
