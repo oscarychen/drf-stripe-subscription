@@ -291,6 +291,7 @@ attributes (default values shown):
 DRF_STRIPE = {
     "DJANGO_USER_EMAIL_FIELD": "email",
     "USER_CREATE_DEFAULTS_ATTRIBUTE_MAP": {"username": "email"},
+    "DJANGO_USER_MODEL": None,
 }
 ```
 
@@ -299,3 +300,12 @@ will be used to look up existing Django User using Stripe Customer email.
 
 The `USER_CREATE_DEFAULTS_ATTRIBUTE_MAP` maps the name of Django User attribute to name of corresponding Stripe Customer
 attribute, and is used during the automated Django User instance creation.
+
+The `DJANGO_USER_MODEL` is optional in case you are not using Django's default user model (nor the model you may have configured using Django's `AUTH_USER_MODEL`) for your users you wish to associate with Stripe customers.
+In this case specify the model you wish to use using a dotted pair - the label of the Django app (which must be in your INSTALLED_APPS), and the name of the Django model that you wish to use.
+For example:
+```python
+DRF_STRIPE = {
+   "DJANGO_USER_MODEL": "myapp.MyUser"
+}
+```
