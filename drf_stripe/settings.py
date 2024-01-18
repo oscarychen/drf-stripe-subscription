@@ -14,6 +14,7 @@ DEFAULTS = {
     "DEFAULT_CHECKOUT_MODE": "subscription",
     "DEFAULT_DISCOUNTS": None,
     "ALLOW_PROMOTION_CODES": True,
+    "DJANGO_USER_MODEL": None,
     "DJANGO_USER_EMAIL_FIELD": "email",  # used to match Stripe customer email
     "USER_CREATE_DEFAULTS_ATTRIBUTE_MAP": {  # attributes to copy from Stripe customer when creating new Django user
         "username": "email"
