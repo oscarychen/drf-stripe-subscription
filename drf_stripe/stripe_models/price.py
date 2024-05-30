@@ -26,7 +26,7 @@ class PriceType(str, Enum):
 
 
 class StripePriceRecurring(BaseModel):
-    aggregate_usage: str = None
+    aggregate_usage: Optional[str] = None
     interval: RecurringInterval
     interval_count: Optional[int]
     usage_type: Optional[UsageType]
