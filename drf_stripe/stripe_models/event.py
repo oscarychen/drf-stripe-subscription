@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Union, Literal, Any
+from typing import Union, Literal, Any, Optional
 
 from pydantic import BaseModel, Field
 
@@ -38,7 +38,7 @@ class EventType(str, Enum):
 class StripeEventRequest(BaseModel):
     """Based on: https://stripe.com/docs/api/events/object#event_object-request"""
     id: str = None
-    idempotency_key: str = None
+    idempotency_key: Optional[str] = None
 
 
 class StripeBaseEvent(BaseModel):
