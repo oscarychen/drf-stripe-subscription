@@ -29,7 +29,7 @@ ACCESS_GRANTING_STATUSES = (
 class StripeSubscriptionItemsDataItem(BaseModel):
     """Based on https://stripe.com/docs/api/subscriptions/object#subscription_object-items-data"""
     id: str
-    billing_thresholds: Dict = None
+    billing_thresholds: Optional[Dict] = None
     created: datetime
     metadata: Dict
     price: StripePrice
@@ -60,7 +60,7 @@ class StripeSubscription(BaseModel):
     items: Optional[StripeSubscriptionItems]
     latest_invoice: Optional[str]
     metadata: Optional[Dict]
-    pending_setup_intent: str = None
+    pending_setup_intent: Optional[str] = None
     pending_update: Any = None
     status: Optional[StripeSubscriptionStatus]
 
