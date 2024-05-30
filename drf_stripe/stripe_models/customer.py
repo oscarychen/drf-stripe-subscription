@@ -28,11 +28,11 @@ class StripeCustomer(BaseModel):
     livemode: Optional[bool]
     next_invoice_sequence: Optional[int]
     preferred_locales: Optional[List[str]]
-    sources: Optional[List[Dict]]
-    subscriptions: Optional[List[StripeSubscriptionItems]]
-    tax: Optional[Dict]
+    sources: Optional[List[Dict]] = None
+    subscriptions: Optional[List[StripeSubscriptionItems]] = None
+    tax: Optional[Dict] = None
     tax_exempt: Optional[str]
-    tax_ids: Optional[List[Dict]]
+    tax_ids: Optional[List[Dict]] = None
 
 
 class StripeCustomers(BaseModel):
