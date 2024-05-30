@@ -56,7 +56,7 @@ class StripeSubscription(BaseModel):
     current_period_end: Optional[datetime]
     current_period_start: Optional[datetime]
     customer: Optional[str]
-    default_payment_method: str = None
+    default_payment_method: Optional[str] = None
     items: Optional[StripeSubscriptionItems]
     latest_invoice: Optional[str]
     metadata: Optional[Dict]
