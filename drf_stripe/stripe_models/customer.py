@@ -26,7 +26,7 @@ class StripeCustomer(BaseModel):
     invoice_prefix: Optional[str]
     invoice_settings: Optional[Dict]
     livemode: Optional[bool]
-    next_invoice_sequence: Optional[int]
+    next_invoice_sequence: Optional[int] = None
     preferred_locales: Optional[List[str]]
     sources: Optional[List[Dict]] = None
     subscriptions: Optional[List[StripeSubscriptionItems]] = None
