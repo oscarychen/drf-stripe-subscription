@@ -1,6 +1,6 @@
 django>=3.2
 djangorestframework>=3.10
 pydantic>=1.8, < 2.0
-stripe>=2.63
+stripe==12.5.1
 tox==3.26
 wheel>=0.37

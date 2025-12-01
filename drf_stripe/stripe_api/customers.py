@@ -1,9 +1,11 @@
 from typing import overload
 
-from drf_stripe.models import get_drf_stripe_user_model as get_user_model
+from django.apps import apps
+from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.transaction import atomic
 
+from drf_stripe.models import get_drf_stripe_user_model as get_user_model
 from drf_stripe.models import StripeUser
 from drf_stripe.stripe_api.api import stripe_api as stripe
 from drf_stripe.stripe_models.customer import StripeCustomers, StripeCustomer
@@ -12,6 +14,84 @@ from ..settings import drf_stripe_settings
 
 class CreatingNewUsersDisabledError(Exception):
     pass
+
+
+def get_billing_model():
+    """
+    Returns the BillingAccount model class if BILLING_ACCOUNT_MODEL is configured, else None.
+    """
+    billing_model_path = drf_stripe_settings.BILLING_ACCOUNT_MODEL
+    if not billing_model_path:
+        return None
+    try:
+        app_label, model_name = billing_model_path.split('.', 1)
+        return apps.get_model(app_label, model_name)
+    except (ValueError, LookupError):
+        try:
+            return apps.get_model(billing_model_path)
+        except LookupError:
+            return None
+
+
+def find_billing_account(billing_model, customer_id=None, user=None):
+    """
+    Find a billing account instance by stripe_customer_id or by manager_user.
+
+    :param billing_model: The BillingAccount model class
+    :param customer_id: Stripe customer id (optional)
+    :param user: Django user instance (optional)
+    :return: billing account instance or None
+    """
+    if billing_model is None:
+        return None
+    
+    # First try by customer_id
+    if customer_id:
+        try:
+            return billing_model.objects.filter(stripe_customer_id=customer_id).first()
+        except Exception:
+            pass
+    
+    # Then try by manager_user
+    if user:
+        try:
+            return billing_model.objects.filter(manager_user=user).first()
+        except Exception:
+            pass
+    
+    return None
+
+
+def update_billing_account_subscription(billing_model, billing_account, customer_id, subscription_id, subscription_defaults):
+    """
+    Update billing account stripe fields and add billing account link to subscription defaults.
+
+    :param billing_model: The BillingAccount model class
+    :param billing_account: The billing account instance
+    :param customer_id: Stripe customer id
+    :param subscription_id: Stripe subscription id
+    :param subscription_defaults: Dictionary of subscription defaults to update
+    :return: Updated subscription_defaults dictionary
+    """
+    if not billing_account:
+        return subscription_defaults
+
+    # Update billing account stripe fields
+    update_fields = []
+    if not billing_account.stripe_customer_id:
+        billing_account.stripe_customer_id = customer_id
+        update_fields.append("stripe_customer_id")
+    if billing_account.stripe_subscription_id != subscription_id:
+        billing_account.stripe_subscription_id = subscription_id
+        update_fields.append("stripe_subscription_id")
+    if update_fields:
+        billing_account.save(update_fields=update_fields)
+
+    # Link subscription to billing account
+    subscription_defaults["billing_account_content_type"] = ContentType.objects.get_for_model(billing_model)
+    subscription_defaults["billing_account_object_id"] = billing_account.pk
+
+    return subscription_defaults
 
 
 @overload
@@ -184,8 +264,10 @@ def _get_or_create_stripe_user_from_user_id_email(user_id, user_email: str, cust
 
     :param user_id: user id
     :param str user_email: user email address
+    :param str customer_id: Stripe customer id (optional)
     """
-    stripe_user, created = StripeUser.objects.get_or_create(user_id=user_id, customer_id=customer_id)
+    defaults = {'customer_id': customer_id} if customer_id else {}
+    stripe_user, created = StripeUser.objects.get_or_create(user_id=user_id, defaults=defaults)
 
     if created and not customer_id:
         customer = _stripe_api_get_or_create_customer_from_email(user_email)
@@ -221,6 +303,9 @@ def stripe_api_update_customers(limit=100, starting_after=None, test_data=None):
     If a Django user does not exist a Django User will be created if setting USER_CREATE_DEFAULTS_ATTRIBUTE_MAP is set,
     otherwise the Customer will be skipped.
 
+    When BILLING_ACCOUNT_MODEL is configured, this function will also update the billing account's
+    stripe_customer_id field if the user is the manager_user of a billing account.
+
     Called from management command.
 
     :param int limit: Limit the number of customers to retrieve
@@ -237,6 +322,8 @@ def stripe_api_update_customers(limit=100, starting_after=None, test_data=None):
         customers_response = test_data
 
     stripe_customers = StripeCustomers(**customers_response).data
+
+    billing_model = get_billing_model()
 
     user_creation_count = 0
     stripe_user_creation_count = 0
@@ -262,6 +349,14 @@ def stripe_api_update_customers(limit=100, starting_after=None, test_data=None):
                 stripe_user, stripe_user_created = StripeUser.objects.get_or_create(user=user,
                                                                                     defaults={"customer_id": customer.id})
                 print(f"Updated Stripe Customer {customer.id}")
+
+                # Update billing account if configured
+                if billing_model:
+                    billing_account = find_billing_account(billing_model, user=user)
+                    if billing_account and not billing_account.stripe_customer_id:
+                        billing_account.stripe_customer_id = customer.id
+                        billing_account.save(update_fields=["stripe_customer_id"])
+                        print(f"Updated billing account {billing_account.pk} with stripe_customer_id {customer.id}")
 
                 if user_created is True:
                     user_creation_count += 1

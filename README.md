@@ -194,6 +194,8 @@ Some of the checkout parameters are specified in `DRF_STRIPE` settings:
 
 `CHECKOUT_CANCEL_URL_PATH`: The checkout session cancel redirect url path.
 
+`CUSTOMER_PORTAL_RETURN_URL_PATH`: The customer portal session return url path, defaults to `"manage-subscription"`.
+
 `PAYMENT_METHOD_TYPES`: The default [payment method types](https://stripe.com/docs/api/checkout/sessions/create#create_checkout_session-payment_method_types)
 , defaults to `["card"]`.
 
@@ -301,7 +303,7 @@ will be used to look up existing Django User using Stripe Customer email.
 The `USER_CREATE_DEFAULTS_ATTRIBUTE_MAP` maps the name of Django User attribute to name of corresponding Stripe Customer
 attribute, and is used during the automated Django User instance creation.
 
-The `DJANGO_USER_MODEL` is optional in case you are not using Django's default user model (nor the model you may have configured using Django's `AUTH_USER_MODEL`) for your users you wish to associate with Stripe customers.
+The `DJANGO_USER_MODEL` is optional in case you are not using Django's default user model (nor the model you may have configured using Django's `AUTH_USER_MODEL`) for your users you wish to assoc[...]
 In this case specify the model you wish to use using a dotted pair - the label of the Django app (which must be in your INSTALLED_APPS), and the name of the Django model that you wish to use.
 For example:
 ```python
@@ -309,3 +311,98 @@ DRF_STRIPE = {
    "DJANGO_USER_MODEL": "myapp.MyUser"
 }
 ```
+
+# BillingAccount opt-in (instructions)
+
+This package by default uses the legacy per-user StripeUser model (subscriptions attached to individual users).
+If you want multi-user/organization billing (a single subscription for a group), the package provides an abstract base
+you can extend and opt into the billing-account flows. This is intentionally opt-in: nothing changes unless you
+configure the billing model.
+
+Key points
+- The package exposes an abstract model `AbstractBillingAccount` that has the minimal fields and helper methods:
+  - stripe_customer_id
+  - stripe_subscription_id
+  - manager_user
+  - get_or_create_stripe_customer(stripe_module, **kwargs)
+  - has_active_subscription()
+  - can_manage_billing(user)
+- By default DRF_STRIPE['BILLING_ACCOUNT_MODEL'] is None and the package behaves exactly as before (legacy per-user).
+- To enable billing-account flows, implement a concrete BillingAccount in your project (extend AbstractBillingAccount),
+  and configure DRF_STRIPE['BILLING_ACCOUNT_MODEL'] to point to it (e.g. "myapp.OrganizationBillingAccount").
+
+How to opt-in (recommended pattern)
+1) Implement your BillingAccount in your app, extending the abstract base:
+
+```python
+from django.db import models
+from drf_stripe.models import AbstractBillingAccount
+
+class OrganizationBillingAccount(AbstractBillingAccount):
+    organization = models.OneToOneField("myapp.Organization", on_delete=models.CASCADE, related_name="billing_account")
+
+    def get_owner(self):
+        return self.organization
+```
+
+2) Configure in settings.py:
+
+```python
+DRF_STRIPE = {
+    # ... other settings ...
+    "BILLING_ACCOUNT_MODEL": "myapp.OrganizationBillingAccount",
+}
+```
+
+3) Run migrations for your app and then optionally run the provided management command to migrate legacy StripeUser rows:
+
+```
+python manage.py migrate
+python manage.py migrate_legacy_billing
+```
+
+Notes about integration
+- If you do not set `BILLING_ACCOUNT_MODEL`, the package will not try to create BillingAccount rows or alter subscription behavior.
+- The Checkout serializer in the package will attempt to use your BillingAccount if configured; otherwise it uses the legacy StripeUser flow.
+- When creating checkout sessions for billing accounts, include metadata (`owner_type`, `owner_id` or billing account PK) so webhooks can reliably persist subscription ids.
+- If billing is enabled, the webhook handler will try to map events to BillingAccount using metadata first, then stripe customer id as fallback. If no BillingAccount is found the legacy behavior applies.
+
+If you implement your OrganizationBillingAccount as the Organization model itself (i.e. add the AbstractBillingAccount fields directly to your Organization),
+ensure your user -> organization relation (for example a ManyToMany on Organization.members) is implemented so you can check membership in your app logic.
+
+After changing models, run makemigrations and migrate.
+
+## Product deployment & notes
+
+- After adding or changing models, run:
+```commandline
+python manage.py makemigrations
+python manage.py migrate
+```
+
+- Configure Stripe keys in environment or Django settings (do not commit secrets):
+  - DRF_STRIPE['STRIPE_API_SECRET']
+  - DRF_STRIPE['STRIPE_WEBHOOK_SECRET']
+
+- If you enable BillingAccount flows:
+  - Implement a concrete model in your project extending `AbstractBillingAccount` (or add the abstract fields to your Organization).
+  - Set `DRF_STRIPE['BILLING_ACCOUNT_MODEL']` to the dotted path of your concrete model.
+  - Run the provided management command to migrate legacy StripeUser entries if needed:
+    ```
+    python manage.py migrate_legacy_billing
+    ```
+
+- Webhooks:
+  - The package's webhook endpoint will continue to handle product/price and legacy per-user subscription events.
+  - When BillingAccount is enabled the webhook mapping will also attempt to resolve BillingAccount using checkout metadata (`owner_type`/`owner_id`) or fallback to `stripe_customer_id`.
+
+- Tests & local development:
+  - Use Stripe test keys for development.
+  - Use Stripe CLI to forward webhooks during local testing:
+    ```
+    stripe listen --forward-to http://localhost:8000/stripe/webhook/
+    ```
+
+- Notes:
+  - Keep metadata on Checkout Sessions to make mapping reliable.
+  - Ensure only manager users (via `manager_user` / `can_manage_billing`) can perform billing actions; others should only be able to view status.

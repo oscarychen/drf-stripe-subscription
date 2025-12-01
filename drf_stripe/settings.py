@@ -10,6 +10,7 @@ DEFAULTS = {
     "NEW_USER_FREE_TRIAL_DAYS": None,
     "CHECKOUT_SUCCESS_URL_PATH": "payment",
     "CHECKOUT_CANCEL_URL_PATH": "manage-subscription",
+    "CUSTOMER_PORTAL_RETURN_URL_PATH": "manage-subscription",
     "DEFAULT_PAYMENT_METHOD_TYPES": ["card"],
     "DEFAULT_CHECKOUT_MODE": "subscription",
     "DEFAULT_DISCOUNTS": None,
@@ -18,7 +19,13 @@ DEFAULTS = {
     "DJANGO_USER_EMAIL_FIELD": "email",  # used to match Stripe customer email
     "USER_CREATE_DEFAULTS_ATTRIBUTE_MAP": {  # attributes to copy from Stripe customer when creating new Django user
         "username": "email"
-    }
+    },
+    # Optional path to a BillingAccount model in your project.
+    # If None, billing-account flows are disabled and legacy per-user behaviour is used.
+    # Example: "myapp.OrganizationBillingAccount"
+    "BILLING_ACCOUNT_MODEL": None,
+    # Default quantity for subscription line items.
+    "DEFAULT_MAX_SUBSCRIPTION_QUANTITY": 1,
 }
 
 
@@ -35,7 +42,6 @@ class DrfStripeSettings:
         return self._user_settings
 
     def __getattr__(self, attr):
-
         # check the setting is accepted
         if attr not in self.defaults:
             raise AttributeError(f"Invalid DRF_STRIPE setting: {attr}")

@@ -13,7 +13,7 @@ def stripe_api_create_billing_portal_session(user_id):
 
     session = stripe.billing_portal.Session.create(
         customer=stripe_user.customer_id,
-        return_url=f"{drf_stripe_settings.FRONT_END_BASE_URL}/manage-subscription/"
+        return_url=f"{drf_stripe_settings.FRONT_END_BASE_URL}/{drf_stripe_settings.CUSTOMER_PORTAL_RETURN_URL_PATH}"
     )
 
     return session

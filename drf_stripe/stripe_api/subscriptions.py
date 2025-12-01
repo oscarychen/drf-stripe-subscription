@@ -7,7 +7,7 @@ from django.db.models import QuerySet
 from django.db.transaction import atomic
 
 from drf_stripe.stripe_api.api import stripe_api as stripe
-from .customers import get_or_create_stripe_user, CreatingNewUsersDisabledError
+from .customers import get_or_create_stripe_user, CreatingNewUsersDisabledError, get_billing_model, find_billing_account, update_billing_account_subscription
 from ..models import Subscription, Price, SubscriptionItem
 from ..stripe_models.subscription import ACCESS_GRANTING_STATUSES, StripeSubscriptions
 
@@ -52,25 +52,37 @@ def stripe_api_update_subscriptions(status: STATUS_ARG = None, limit: int = 100,
 
     stripe_subscriptions = StripeSubscriptions(**subscriptions_response).data
 
+    billing_model = get_billing_model()
+
     creation_count = 0
 
     for subscription in stripe_subscriptions:
         try:
             stripe_user = get_or_create_stripe_user(customer_id=subscription.customer)
 
+            subscription_defaults = {
+                "stripe_user": stripe_user,
+                "period_start": subscription.current_period_start,
+                "period_end": subscription.current_period_end,
+                "cancel_at": subscription.cancel_at,
+                "cancel_at_period_end": subscription.cancel_at_period_end,
+                "ended_at": subscription.ended_at,
+                "status": subscription.status,
+                "trial_end": subscription.trial_end,
+                "trial_start": subscription.trial_start
+            }
+
+            # Link to billing account if configured
+            if billing_model:
+                user = stripe_user.user if stripe_user else None
+                billing_account = find_billing_account(billing_model, customer_id=subscription.customer, user=user)
+                subscription_defaults = update_billing_account_subscription(
+                    billing_model, billing_account, subscription.customer, subscription.id, subscription_defaults
+                )
+
             _, created = Subscription.objects.update_or_create(
                 subscription_id=subscription.id,
-                defaults={
-                    "stripe_user": stripe_user,
-                    "period_start": subscription.current_period_start,
-                    "period_end": subscription.current_period_end,
-                    "cancel_at": subscription.cancel_at,
-                    "cancel_at_period_end": subscription.cancel_at_period_end,
-                    "ended_at": subscription.ended_at,
-                    "status": subscription.status,
-                    "trial_end": subscription.trial_end,
-                    "trial_start": subscription.trial_start
-                }
+                defaults=subscription_defaults
             )
             print(f"Updated subscription {subscription.id}")
             _update_subscription_items(subscription.id, subscription.items.data)
