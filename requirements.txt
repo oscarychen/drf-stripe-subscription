@@ -1,4 +1,4 @@
-django>=4.2.11
+django>=3.2.25
 djangorestframework>=3.10
 pydantic>=1.8, < 2.0
 stripe>=2.63
